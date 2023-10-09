@@ -1,16 +1,10 @@
 # 52ab5108-3f6f-42fb-8ba3-73bc054f22c8
 
 import os
-import unittest
 import yaml
-import re
-import string
-from attackcti import attack_client
 from colorama import init
 from colorama import Fore
-import collections
 import subprocess
-import time
 
 path_to_rules = ["rules"]
 
