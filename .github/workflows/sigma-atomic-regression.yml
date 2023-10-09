@@ -1,0 +1,36 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Sigma Atomic Regression
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+
+env:
+  EVTX_BASELINE_VERSION: v0.7
+
+jobs:
+  test-atomics:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3.3.0
+      with:
+        submodules: true
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4.5.0
+      with:
+        python-version: 3.11
+    - name: Script
+      run: |
+        Set-PSRepository PSGallery -InstallationPolicy Trusted
+        Install-Module -Name invoke-atomicredteam,powershell-yaml
+      shell: pwsh
+    - name: Launch Atomics
+      run: |
+        pip install PyYAML colorama
+        python tests/test_atomics.py
