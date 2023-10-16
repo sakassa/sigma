@@ -20,6 +20,7 @@ jobs:
         ref: rules-promotions
     - name: Pull Master Branch
       run: |
+        git rev-parse --abbrev-ref HEAD
         git remote -v
         git pull rebase upstream master
   promote:
