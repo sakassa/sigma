@@ -20,8 +20,7 @@ jobs:
         ref: rules-promotions
     - name: Pull Master Branch
       run: |
-        git fetch
-        git rebase origin master
+        git rebase upstream master
   promote:
     runs-on: ubuntu-latest
     needs: pull-master
