@@ -21,4 +21,4 @@ jobs:
         # To run locally, `pip install pyspelling`, followed by
         # `pyspelling -c .github/config/spellcheck.yml`.
         with:
-          config_path: .github/config/spellcheck.yml
+          config_path: .github/spellcheck.yml
