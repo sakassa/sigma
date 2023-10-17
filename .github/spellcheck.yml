@@ -8,5 +8,5 @@ matrix:
         wordlists:
           - .github/wordlist.txt
       sources:
-      - '*.yml'
+      - 'rules/**/*.yml'
       default_encoding: utf-8
