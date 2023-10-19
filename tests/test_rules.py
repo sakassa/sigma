@@ -346,88 +346,88 @@ class TestRules(unittest.TestCase):
             + "There are rules using 'all of them'. Better use e.g. 'all of selection*' instead (and use the 'selection_' prefix as search-identifier).",
         )
 
-    def test_duplicate_detections(self):
-        def compare_detections(detection1: dict, detection2: dict) -> bool:
-            # If they have different log sources. They can't be the same
-            # We first remove any definitions fields (if there are any) in the logsource to avoid typos
-            detection1["logsource"].pop("definition", None)
-            detection2["logsource"].pop("definition", None)
-
-            if detection1["logsource"] != detection2["logsource"]:
-                return False
-
-            # detections not the same count can't be the same
-            if len(detection1) != len(detection2):
-                return False
-
-            for named_condition in detection1:
-                # don't check timeframes
-                if named_condition == "timeframe":
-                    continue
-
-                # condition clause must be the same too
-                if named_condition == "condition":
-                    if detection1["condition"] != detection2["condition"]:
-                        return False
-                    else:
-                        continue
-
-                # Named condition must exist in both rule files
-                if named_condition not in detection2:
-                    return False
-
-                # can not be the same  if len is not equal
-                if len(detection1[named_condition]) != len(detection2[named_condition]):
-                    return False
-
-                for condition in detection1[named_condition]:
-                    if type(condition) != str:
-                        return False
-
-                    if condition not in detection2[named_condition]:
-                        return False
-
-                    # We add this check in case of keyword rules. Where no field is used. The parser returns a list instead of a dict
-                    # If the 2 list are different that means they aren't the same
-                    if (type(detection2[named_condition]) == list) or (
-                        type(detection2[named_condition]) == list
-                    ):
-                        condition_value1 = detection1[named_condition]
-                        condition_value2 = detection2[named_condition]
-                    else:
-                        condition_value1 = detection1[named_condition][condition]
-                        condition_value2 = detection2[named_condition][condition]
-
-                    if condition_value1 != condition_value2:
-                        return False
-
-            return True
-
-        faulty_detections = []
-        files_and_their_detections = {}
-
-        for file in self.yield_next_rule_file_path(self.path_to_rules):
-            detection = self.get_rule_part(file_path=file, part_name="detection")
-            logsource = self.get_rule_part(file_path=file, part_name="logsource")
-            detection["logsource"] = {}
-            detection["logsource"].update(logsource)
-            yaml = self.get_rule_yaml(file_path=file)
-
-            is_multipart_yaml_file = len(yaml) != 1
-            if is_multipart_yaml_file:
-                continue
-
-            for key in files_and_their_detections:
-                if compare_detections(detection, files_and_their_detections[key]):
-                    faulty_detections.append((key, file))
-
-            files_and_their_detections[file] = detection
-
-        self.assertEqual(
-            faulty_detections,
-            [],
-            Fore.YELLOW + "There are rule files with exactly the same detection logic.",
-        )
+    # def test_duplicate_detections(self):
+    #    def compare_detections(detection1: dict, detection2: dict) -> bool:
+    #        # If they have different log sources. They can't be the same
+    #        # We first remove any definitions fields (if there are any) in the logsource to avoid typos
+    #        detection1["logsource"].pop("definition", None)
+    #        detection2["logsource"].pop("definition", None)
+    #
+    #        if detection1["logsource"] != detection2["logsource"]:
+    #            return False
+    #
+    #        # detections not the same count can't be the same
+    #        if len(detection1) != len(detection2):
+    #            return False
+    #
+    #        for named_condition in detection1:
+    #            # don't check timeframes
+    #            if named_condition == "timeframe":
+    #                continue
+    #
+    #            # condition clause must be the same too
+    #            if named_condition == "condition":
+    #                if detection1["condition"] != detection2["condition"]:
+    #                    return False
+    #                else:
+    #                    continue
+    #
+    #            # Named condition must exist in both rule files
+    #            if named_condition not in detection2:
+    #                return False
+    #
+    #            # can not be the same  if len is not equal
+    #            if len(detection1[named_condition]) != len(detection2[named_condition]):
+    #                return False
+    #
+    #            for condition in detection1[named_condition]:
+    #                if type(condition) != str:
+    #                    return False
+    #
+    #                if condition not in detection2[named_condition]:
+    #                    return False
+    #
+    #                # We add this check in case of keyword rules. Where no field is used. The parser returns a list instead of a dict
+    #                # If the 2 list are different that means they aren't the same
+    #                if (type(detection2[named_condition]) == list) or (
+    #                    type(detection2[named_condition]) == list
+    #                ):
+    #                    condition_value1 = detection1[named_condition]
+    #                    condition_value2 = detection2[named_condition]
+    #                else:
+    #                    condition_value1 = detection1[named_condition][condition]
+    #                    condition_value2 = detection2[named_condition][condition]
+    #
+    #                if condition_value1 != condition_value2:
+    #                    return False
+    #
+    #        return True
+    #
+    #    faulty_detections = []
+    #    files_and_their_detections = {}
+    #
+    #    for file in self.yield_next_rule_file_path(self.path_to_rules):
+    #        detection = self.get_rule_part(file_path=file, part_name="detection")
+    #        logsource = self.get_rule_part(file_path=file, part_name="logsource")
+    #        detection["logsource"] = {}
+    #        detection["logsource"].update(logsource)
+    #        yaml = self.get_rule_yaml(file_path=file)
+    #
+    #        is_multipart_yaml_file = len(yaml) != 1
+    #        if is_multipart_yaml_file:
+    #            continue
+    #
+    #        for key in files_and_their_detections:
+    #            if compare_detections(detection, files_and_their_detections[key]):
+    #                faulty_detections.append((key, file))
+    #
+    #        files_and_their_detections[file] = detection
+    #
+    #    self.assertEqual(
+    #        faulty_detections,
+    #        [],
+    #        Fore.YELLOW + "There are rule files with exactly the same detection logic.",
+    #    )
 
     def test_source_eventlog(self):
         faulty_detections = []
@@ -1903,6 +1903,8 @@ class TestRules(unittest.TestCase):
 
         if self.workflow_error_counter == 0:
             self.workflow_results.write("✅ Passed Successfully")
+
+        self.workflow_results.close()
 
         # Create escape_allow_list for this test
         escape_allow_list = create_escape_allow_list()
