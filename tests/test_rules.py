@@ -25,6 +25,12 @@ class TestRules(unittest.TestCase):
         cls.MITRE_ALL = get_mitre_data()
         print("Catched data - starting tests...")
 
+    # Prepare Workflow Output
+    workflow_error_counter = 0
+    workflow_results = open("tests/output.md", "w")
+
+    workflow_results.write("## SIGMA Test Workflow Output \n\n")
+
     MITRE_TECHNIQUE_NAMES = [
         "process_injection",
         "signed_binary_proxy_execution",
@@ -106,6 +112,17 @@ class TestRules(unittest.TestCase):
                 for tm in self.TRADE_MARKS:
                     if tm in file_data:
                         files_with_legal_issues.append(file)
+
+        if files_with_legal_issues:
+            self.workflow_error_counter += 1
+            self.workflow_results.write(
+                "### ❌ Legal Trademark Violation Test Failed \n\n"
+            )
+            self.workflow_results.write(
+                "There are rule files which contains a trademark or reference that doesn't comply with the respective trademark requirements - please remove the trademark to avoid legal issues\n"
+            )
+            for file in files_with_legal_issues:
+                self.workflow_results.write(f"{file}\n")
 
         self.assertEqual(
             files_with_legal_issues,
@@ -1883,6 +1900,9 @@ class TestRules(unittest.TestCase):
                     )
                 )
                 faulty_rules.append(file)
+
+        if self.workflow_error_counter == 0:
+            self.workflow_results.write("✅ Passed Successfully")
 
         # Create escape_allow_list for this test
         escape_allow_list = create_escape_allow_list()
