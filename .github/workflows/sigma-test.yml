@@ -72,15 +72,8 @@ jobs:
         python-version: 3.11
     - name: Install dependencies
       run: |
-        # pip install sigma-cli~=0.7.1
+        # pip install sigma-cli~=0.7.7
         pip install sigma-cli
-    - name: Test Sigma Rule Syntax
-      run: |
-        sigma check rules*
-    - name: Test Sigma Rules
-      run: |
-        pip install PyYAML attackcti colorama
-        python tests/test_rules.py
     - name: Get PR Number
       uses: actions/github-script@v6
       id: get_pr_data
@@ -93,7 +86,15 @@ jobs:
               repo: context.repo.repo,
             })
           ).data[0];
+    - name: Test Sigma Rule Syntax
+      run: |
+        sigma check rules*
+    - name: Test Sigma Rules
+      run: |
+        pip install PyYAML attackcti colorama
+        python tests/test_rules.py
     - name: PR Comment
+      if: always()
       uses: thollander/actions-comment-pull-request@v2
       with:
         filePath: tests/output.md
