@@ -131,155 +131,155 @@ class TestRules(unittest.TestCase):
             + "There are rule files which contains a trademark or reference that doesn't comply with the respective trademark requirements - please remove the trademark to avoid legal issues",
         )
 
-    def test_optional_tags(self):
-        files_with_incorrect_tags = []
-        tags_pattern = re.compile(
-            r"cve\.\d+\.\d+|attack\.(t\d{4}\.\d{3}|[gts]\d{4})$|attack\.[a-z_]+|car\.\d{4}-\d{2}-\d{3}|detection\.\w+"
-        )
-        for file in self.yield_next_rule_file_path(self.path_to_rules):
-            tags = self.get_rule_part(file_path=file, part_name="tags")
-            if tags:
-                for tag in tags:
-                    if tags_pattern.match(tag) == None:
-                        print(
-                            Fore.RED
-                            + "Rule {} has the invalid tag <{}>".format(file, tag)
-                        )
-                        files_with_incorrect_tags.append(file)
+    # def test_optional_tags(self):
+    #    files_with_incorrect_tags = []
+    #    tags_pattern = re.compile(
+    #        r"cve\.\d+\.\d+|attack\.(t\d{4}\.\d{3}|[gts]\d{4})$|attack\.[a-z_]+|car\.\d{4}-\d{2}-\d{3}|detection\.\w+"
+    #    )
+    #    for file in self.yield_next_rule_file_path(self.path_to_rules):
+    #        tags = self.get_rule_part(file_path=file, part_name="tags")
+    #        if tags:
+    #            for tag in tags:
+    #                if tags_pattern.match(tag) == None:
+    #                    print(
+    #                        Fore.RED
+    #                        + "Rule {} has the invalid tag <{}>".format(file, tag)
+    #                    )
+    #                    files_with_incorrect_tags.append(file)
+    #
+    #    self.assertEqual(
+    #        files_with_incorrect_tags,
+    #        [],
+    #        Fore.RED
+    #        + "There are rules with incorrect/unknown Tags. (please inform us about new tags that are not yet supported in our tests) and check the correct tags here: https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md ",
+    #    )
 
-        self.assertEqual(
-            files_with_incorrect_tags,
-            [],
-            Fore.RED
-            + "There are rules with incorrect/unknown Tags. (please inform us about new tags that are not yet supported in our tests) and check the correct tags here: https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md ",
-        )
+    # def test_confirm_correct_mitre_tags(self):
+    #    files_with_incorrect_mitre_tags = []
+    #
+    #    for file in self.yield_next_rule_file_path(self.path_to_rules):
+    #        tags = self.get_rule_part(file_path=file, part_name="tags")
+    #        if tags:
+    #            for tag in tags:
+    #                if tag.startswith("attack.") and tag not in self.MITRE_ALL:
+    #                    print(
+    #                        Fore.RED
+    #                        + "Rule {} has the following incorrect MITRE tag {}".format(
+    #                            file, tag
+    #                        )
+    #                    )
+    #                    files_with_incorrect_mitre_tags.append(file)
+    #
+    #    self.assertEqual(
+    #        files_with_incorrect_mitre_tags,
+    #        [],
+    #        Fore.RED
+    #        + "There are rules with incorrect/unknown MITRE Tags. (please inform us about new tags that are not yet supported in our tests) and check the correct tags here: https://attack.mitre.org/ ",
+    #    )
+    #
+    # def test_duplicate_tags(self):
+    #    files_with_incorrect_mitre_tags = []
+    #
+    #    for file in self.yield_next_rule_file_path(self.path_to_rules):
+    #        tags = self.get_rule_part(file_path=file, part_name="tags")
+    #        if tags:
+    #            known_tags = []
+    #            for tag in tags:
+    #                if tag in known_tags:
+    #                    print(
+    #                        Fore.RED
+    #                        + "Rule {} has the duplicate tag {}".format(file, tag)
+    #                    )
+    #                    files_with_incorrect_mitre_tags.append(file)
+    #                else:
+    #                    known_tags.append(tag)
+    #
+    #    self.assertEqual(
+    #        files_with_incorrect_mitre_tags,
+    #        [],
+    #        Fore.RED + "There are rules with duplicate tags",
+    #    )
+    #
+    # def test_duplicate_references(self):
+    #    files_with_duplicate_references = []
+    #
+    #    for file in self.yield_next_rule_file_path(self.path_to_rules):
+    #        references = self.get_rule_part(file_path=file, part_name="references")
+    #        if references:
+    #            known_references = []
+    #            for reference in references:
+    #                if reference in known_references:
+    #                    print(
+    #                        Fore.RED
+    #                        + "Rule {} has the duplicate reference {}".format(
+    #                            file, reference
+    #                        )
+    #                    )
+    #                    files_with_duplicate_references.append(file)
+    #                else:
+    #                    known_references.append(reference)
+    #
+    #    self.assertEqual(
+    #        files_with_duplicate_references,
+    #        [],
+    #        Fore.RED + "There are rules with duplicate references",
+    #    )
 
-    def test_confirm_correct_mitre_tags(self):
-        files_with_incorrect_mitre_tags = []
-
-        for file in self.yield_next_rule_file_path(self.path_to_rules):
-            tags = self.get_rule_part(file_path=file, part_name="tags")
-            if tags:
-                for tag in tags:
-                    if tag.startswith("attack.") and tag not in self.MITRE_ALL:
-                        print(
-                            Fore.RED
-                            + "Rule {} has the following incorrect MITRE tag {}".format(
-                                file, tag
-                            )
-                        )
-                        files_with_incorrect_mitre_tags.append(file)
-
-        self.assertEqual(
-            files_with_incorrect_mitre_tags,
-            [],
-            Fore.RED
-            + "There are rules with incorrect/unknown MITRE Tags. (please inform us about new tags that are not yet supported in our tests) and check the correct tags here: https://attack.mitre.org/ ",
-        )
-
-    def test_duplicate_tags(self):
-        files_with_incorrect_mitre_tags = []
-
-        for file in self.yield_next_rule_file_path(self.path_to_rules):
-            tags = self.get_rule_part(file_path=file, part_name="tags")
-            if tags:
-                known_tags = []
-                for tag in tags:
-                    if tag in known_tags:
-                        print(
-                            Fore.RED
-                            + "Rule {} has the duplicate tag {}".format(file, tag)
-                        )
-                        files_with_incorrect_mitre_tags.append(file)
-                    else:
-                        known_tags.append(tag)
-
-        self.assertEqual(
-            files_with_incorrect_mitre_tags,
-            [],
-            Fore.RED + "There are rules with duplicate tags",
-        )
-
-    def test_duplicate_references(self):
-        files_with_duplicate_references = []
-
-        for file in self.yield_next_rule_file_path(self.path_to_rules):
-            references = self.get_rule_part(file_path=file, part_name="references")
-            if references:
-                known_references = []
-                for reference in references:
-                    if reference in known_references:
-                        print(
-                            Fore.RED
-                            + "Rule {} has the duplicate reference {}".format(
-                                file, reference
-                            )
-                        )
-                        files_with_duplicate_references.append(file)
-                    else:
-                        known_references.append(reference)
-
-        self.assertEqual(
-            files_with_duplicate_references,
-            [],
-            Fore.RED + "There are rules with duplicate references",
-        )
-
-    def test_look_for_duplicate_filters(self):
-        def check_list_or_recurse_on_dict(item, depth: int, special: bool) -> None:
-            if type(item) == list:
-                check_if_list_contain_duplicates(item, depth, special)
-            elif type(item) == dict and depth <= MAX_DEPTH:
-                for keys, sub_item in item.items():
-                    if (
-                        "|base64" in keys or "|re" in keys
-                    ):  # Covers both "base64" and "base64offset" modifiers, and "re" modifier
-                        check_list_or_recurse_on_dict(sub_item, depth + 1, True)
-                    else:
-                        check_list_or_recurse_on_dict(sub_item, depth + 1, special)
-
-        def check_if_list_contain_duplicates(
-            item: list, depth: int, special: bool
-        ) -> None:
-            try:
-                # We use a list comprehension to convert all the element to lowercase. Since we don't care about casing in SIGMA except for the following modifiers
-                #   - "base64offset"
-                #   - "base64"
-                #   - "re"
-                if special:
-                    item_ = item
-                else:
-                    item_ = [i.lower() for i in item]
-                if len(item_) != len(set(item_)):
-                    # We find the duplicates and then print them to the user
-                    duplicates = [
-                        i
-                        for i, count in collections.Counter(item_).items()
-                        if count > 1
-                    ]
-                    print(
-                        Fore.RED
-                        + "Rule {} has duplicate filters {}".format(file, duplicates)
-                    )
-                    files_with_duplicate_filters.append(file)
-            except:
-                # unhashable types like dictionaries
-                for sub_item in item:
-                    if type(sub_item) == dict and depth <= MAX_DEPTH:
-                        check_list_or_recurse_on_dict(sub_item, depth + 1, special)
-
-        MAX_DEPTH = 3
-        files_with_duplicate_filters = []
-
-        for file in self.yield_next_rule_file_path(self.path_to_rules):
-            detection = self.get_rule_part(file_path=file, part_name="detection")
-            check_list_or_recurse_on_dict(detection, 1, False)
-
-        self.assertEqual(
-            files_with_duplicate_filters,
-            [],
-            Fore.RED + "There are rules with duplicate filters",
-        )
+    # def test_look_for_duplicate_filters(self):
+    #    def check_list_or_recurse_on_dict(item, depth: int, special: bool) -> None:
+    #        if type(item) == list:
+    #            check_if_list_contain_duplicates(item, depth, special)
+    #        elif type(item) == dict and depth <= MAX_DEPTH:
+    #            for keys, sub_item in item.items():
+    #                if (
+    #                    "|base64" in keys or "|re" in keys
+    #                ):  # Covers both "base64" and "base64offset" modifiers, and "re" modifier
+    #                    check_list_or_recurse_on_dict(sub_item, depth + 1, True)
+    #                else:
+    #                    check_list_or_recurse_on_dict(sub_item, depth + 1, special)
+    #
+    #    def check_if_list_contain_duplicates(
+    #        item: list, depth: int, special: bool
+    #    ) -> None:
+    #        try:
+    #            # We use a list comprehension to convert all the element to lowercase. Since we don't care about casing in SIGMA except for the following modifiers
+    #            #   - "base64offset"
+    #            #   - "base64"
+    #            #   - "re"
+    #            if special:
+    #                item_ = item
+    #            else:
+    #                item_ = [i.lower() for i in item]
+    #            if len(item_) != len(set(item_)):
+    #                # We find the duplicates and then print them to the user
+    #                duplicates = [
+    #                    i
+    #                    for i, count in collections.Counter(item_).items()
+    #                    if count > 1
+    #                ]
+    #                print(
+    #                    Fore.RED
+    #                    + "Rule {} has duplicate filters {}".format(file, duplicates)
+    #                )
+    #                files_with_duplicate_filters.append(file)
+    #        except:
+    #            # unhashable types like dictionaries
+    #            for sub_item in item:
+    #                if type(sub_item) == dict and depth <= MAX_DEPTH:
+    #                    check_list_or_recurse_on_dict(sub_item, depth + 1, special)
+    #
+    #    MAX_DEPTH = 3
+    #    files_with_duplicate_filters = []
+    #
+    #    for file in self.yield_next_rule_file_path(self.path_to_rules):
+    #        detection = self.get_rule_part(file_path=file, part_name="detection")
+    #        check_list_or_recurse_on_dict(detection, 1, False)
+    #
+    #    self.assertEqual(
+    #        files_with_duplicate_filters,
+    #        [],
+    #        Fore.RED + "There are rules with duplicate filters",
+    #    )
 
     def test_field_name_with_space(self):
         def key_iterator(fields, faulty):

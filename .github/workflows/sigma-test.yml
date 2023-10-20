@@ -74,8 +74,7 @@ jobs:
       run: |
         # pip install sigma-cli~=0.7.7
         pip install sigma-cli
-    - name: Get PR Number
-      uses: actions/github-script@v6
+    - uses: actions/github-script@v6
       id: get_pr_data
       with:
         script: |
