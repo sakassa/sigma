@@ -26,7 +26,7 @@ class TestRules(unittest.TestCase):
         print("Catched data - starting tests...")
 
     # Prepare Workflow Output
-    workflow_error_counter = 0
+    WF_ERROR_COUNTER = 0
     workflow_results = open("tests/output.md", "w")
 
     workflow_results.write("## SIGMA Test Workflow Output \n\n")
@@ -114,7 +114,8 @@ class TestRules(unittest.TestCase):
                         files_with_legal_issues.append(file)
 
         if files_with_legal_issues:
-            self.workflow_error_counter += 1
+            global WF_ERROR_COUNTER
+            WF_ERROR_COUNTER += 1
             self.workflow_results.write(
                 "### ❌ Legal Trademark Violation Test Failed \n\n"
             )
