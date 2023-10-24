@@ -2356,6 +2356,11 @@ class TestRules(unittest.TestCase):
             faulty_rules, [], Fore.RED + "There are rules using illegal re-escapes"
         )
 
+    if workflow_error_counter == 0:
+        workflow_results.write("✅ All Sigma Tests Passed Successfully")
+
+    workflow_results.close()
+
 
 def get_mitre_data():
     """
