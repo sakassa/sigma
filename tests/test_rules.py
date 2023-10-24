@@ -2188,7 +2188,7 @@ class TestRules(unittest.TestCase):
                 except:
                     pass
 
-            if not faulty_config:
+            if faulty_config:
                 self.workflow_error_counter += 1
                 self.workflow_results.write(
                     "### ❌ Thor Logsource Config Test Failed \n\n"
@@ -2204,7 +2204,7 @@ class TestRules(unittest.TestCase):
                 + "thor.yml configuration file located in 'tests/thor.yml' has a borken log source definition",
             )
         except:
-            if not faulty_config:
+            if faulty_config:
                 self.workflow_error_counter += 1
                 self.workflow_results.write(
                     "### ❌ Thor Logsource Config Test Failed \n\n"

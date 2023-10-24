@@ -20,13 +20,13 @@ logsource:
     service: application
     # warning: The 'data' field used in the detection section is the container for the event data as a whole. You may have to adapt the rule for your backend accordingly
 detection:
-    selection:
+    test:
         Provider_Name: 'Application Error'
         EventID: 1000
         Data|contains|all:
             - 'MsMpEng.exe'
             - 'mpengine.dll'
-    condition: all of selection*
+    condition: selection
 falsepositives:
-    - MsMpEng might crash if the "C:\" partition is full
+    - pentest
 level: high
