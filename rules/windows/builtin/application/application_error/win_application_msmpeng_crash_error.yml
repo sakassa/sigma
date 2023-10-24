@@ -4,7 +4,7 @@ related:
     - id: 6c82cf5c-090d-4d57-9188-533577631108
       type: similar
 status: experimental
-description: This rule detects a suspicious crash of the Microsoft Malware Protection Engine. ATT&CK (https://technet.microsoft.com/en-us/library/security/4022344)
+description: This rule detects a suspicious crash of the Microsoft Malware Protection Engine.
 references:
     - https://bugs.chromium.org/p/project-zero/issues/detail?id=1252&desc=5
     - https://technet.microsoft.com/en-us/library/security/4022344
@@ -26,7 +26,7 @@ detection:
         Data|contains|all:
             - 'MsMpEng.exe'
             - 'mpengine.dll'
-    condition: selection
+    condition: test
 falsepositives:
-    - pentest
+    - Unknown
 level: high
