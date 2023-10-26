@@ -39,21 +39,20 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 if "content_data" not in st.session_state:
     st.session_state["content_data"] = {
         "title": "Enter the title of the rule",
+        "status": "Select the status of the rule",
+        "description": "Enter a description for the rule",
+        "references": ["Enter references"],
+        "author": "Enter the author name",
+        "date": "Enter the date of creation",
+        "modified": "Enter the date of modification",
+        "tags": ["Enter any relevant tags"],
         "logsource": {
             "product": "Enter the product name",
             "service": "Enter the service name",
         },
         "detection": {"condition": "Enter the detection condition"},
-        "status": "Select the status of the rule",
-        "description": "Enter a description for the rule",
-        "author": "Enter the author name",
-        "references": ["Enter references"],
-        "date": "Enter the date of creation",
-        "modified": "Enter the date of modification",
-        "fields": ["Enter any additional fields"],
         "falsepositives": ["Enter any known false positives"],
         "level": "Select the severity level",
-        "tags": ["Enter any relevant tags"],
     }
 
 st.title("SigmaHQ Content Creation")
@@ -74,21 +73,20 @@ with st.sidebar:
     if st.button("New"):
         st.session_state["content_data"] = {
             "title": "Enter the title of the rule",
+            "status": "Select the status of the rule",
+            "description": "Enter a description for the rule",
+            "references": ["Enter references"],
+            "author": "Enter the author name",
+            "date": "Enter the date of creation",
+            "modified": "Enter the date of modification",
+            "tags": ["Enter any relevant tags"],
             "logsource": {
                 "product": "Enter the product name",
                 "service": "Enter the service name",
             },
             "detection": {"condition": "Enter the detection condition"},
-            "status": "Select the status of the rule",
-            "description": "Enter a description for the rule",
-            "author": "Enter the author name",
-            "references": ["Enter references"],
-            "date": "Enter the date of creation",
-            "modified": "Enter the date of modification",
-            "fields": ["Enter any additional fields"],
             "falsepositives": ["Enter any known false positives"],
             "level": "Select the severity level",
-            "tags": ["Enter any relevant tags"],
         }
 
     st.session_state["content_data"]["title"] = st.text_input(
