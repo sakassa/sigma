@@ -71,5 +71,5 @@ with col3:
 col4, col5, col6 = st.columns([0.2, 0.6, 0.2])
 
 with col5:
-    image = Image.open("sigma_logo_dark.png")
+    image = Image.open("./sigma_logo_dark.png")
     st.image(image, width=300)
