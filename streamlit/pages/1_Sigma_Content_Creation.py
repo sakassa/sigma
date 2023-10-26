@@ -4,7 +4,7 @@ import yaml
 import glob
 
 st.set_page_config(
-    page_title="SigmaHQ Content Creation",
+    page_title="SigmaHQ Rule Creation",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -57,7 +57,7 @@ with st.sidebar:
         with open(selected_file, "r") as file:
             file_content = yaml.safe_load(file)
             st.session_state["content_data"] = file_content
-    st.text("or create new")
+    st.text("or create new a one")
     if st.button("New"):
         st.session_state["content_data"] = {
             "title": "Enter the title of the rule",
@@ -151,7 +151,10 @@ with st.sidebar:
 
 st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
 yaml_output = yaml.safe_dump(
-    st.session_state["content_data"], sort_keys=False, default_flow_style=False
+    st.session_state["content_data"],
+    sort_keys=False,
+    default_flow_style=False,
+    indent=4,
 )
 st.code(yaml_output)
 if st.button("Generate YAML File"):
