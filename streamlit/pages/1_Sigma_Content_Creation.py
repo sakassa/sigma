@@ -157,6 +157,6 @@ st.code(yaml_output)
 
 if st.button("Generate YAML File"):
     filename = "SigmaHQ_Content_" + str(uuid.uuid4()) + ".yaml"
-    with open(filename, "w") as file:
-        file.write(yaml_output)
-    st.success(f"File {filename} saved!")
+    download_button_str = st.download_button(
+        label="Download YAML", data=yaml_output, file_name=filename, mime="text/yaml"
+    )
