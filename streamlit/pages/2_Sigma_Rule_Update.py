@@ -2,12 +2,16 @@ import streamlit as st
 import uuid
 import yaml
 import glob
+import os
+import ntpath
+import json
 
 st.set_page_config(
-    page_title="SigmaHQ Rule Creation",
+    page_title="🧰 SigmaHQ Rule Update",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 custom_css = """
     <style>
         body {
@@ -15,13 +19,19 @@ custom_css = """
         }
     </style>
     """
+
 st.markdown(custom_css, unsafe_allow_html=True)
+
 file_list = (
     glob.glob("rules/**/*.yml", recursive=True)
     + glob.glob("rules/**/*.yaml", recursive=True)
     + glob.glob("rules-*/**/*.yml", recursive=True)
     + glob.glob("rules-*/**/*.yaml", recursive=True)
 )
+
+with open("streamlit/logsource_data.json", "r") as file:
+    logsource_content = json.loads(file.read())
+
 hide_streamlit_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -29,6 +39,7 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 if "content_data" not in st.session_state:
     st.session_state["content_data"] = {
         "title": "Enter the title of the rule",
@@ -42,41 +53,27 @@ if "content_data" not in st.session_state:
         "logsource": {
             "product": "Enter the product name",
             "service": "Enter the service name",
+            "category": "Enter the category name",
         },
         "detection": {"condition": "Enter the detection condition"},
         "falsepositives": ["Enter any known false positives"],
         "level": "Select the severity level",
     }
-if "file_loaded_manually" not in st.session_state:
-    st.session_state["file_loaded_manually"] = False
-st.title("SigmaHQ Content Creation")
+
+st.title("🧰 SigmaHQ Rule Update")
+print("Current Working Directory:", os.getcwd())
+
 with st.sidebar:
     st.title("Content Settings")
+
+    # Create a dropdown menu with the file list
     selected_file = st.selectbox("Select a YAML file", file_list)
-    if selected_file and st.session_state["file_loaded_manually"]:
+
+    # When a file is selected, read the file and update the session state
+    if selected_file:
         with open(selected_file, "r") as file:
             file_content = yaml.safe_load(file)
             st.session_state["content_data"] = file_content
-    st.text("or create new a one")
-    if st.button("New"):
-        st.session_state["content_data"] = {
-            "title": "Enter the title of the rule",
-            "status": "Select the status of the rule",
-            "description": "Enter a description for the rule",
-            "references": ["Enter references"],
-            "author": "Enter the author name",
-            "date": "Enter the date of creation",
-            "modified": "Enter the date of modification",
-            "tags": ["Enter any relevant tags"],
-            "logsource": {
-                "product": "Enter the product name",
-                "service": "Enter the service name",
-            },
-            "detection": {"condition": "Enter the detection condition"},
-            "falsepositives": ["Enter any known false positives"],
-            "level": "Select the severity level",
-        }
-        st.session_state["file_loaded_manually"] = False
 
     # Title
     st.session_state["content_data"]["title"] = st.text_input(
@@ -117,14 +114,49 @@ with st.sidebar:
     st.session_state["content_data"]["tags"] = tags.split(", ")
 
     # Logsource
-    st.session_state["content_data"]["logsource"]["product"] = st.text_input(
-        "Log Source Product",
-        st.session_state["content_data"]["logsource"].get("product", ""),
-    )
-    st.session_state["content_data"]["logsource"]["service"] = st.text_input(
-        "Log Source Service",
-        st.session_state["content_data"]["logsource"].get("service", ""),
-    )
+
+    # Product
+    try:
+        products = logsource_content["product"]
+        st.session_state["content_data"]["logsource"]["product"] = st.selectbox(
+            "product",
+            products,
+            index=products.index(
+                st.session_state["content_data"]["logsource"]["product"]
+            )
+            if st.session_state["content_data"]["logsource"]["product"] in products
+            else 0,
+        )
+    except:
+        pass
+    # Service
+    try:
+        services = logsource_content["product"]
+        st.session_state["content_data"]["logsource"]["service"] = st.selectbox(
+            "service",
+            services,
+            index=services.index(
+                st.session_state["content_data"]["logsource"]["service"]
+            )
+            if st.session_state["content_data"]["logsource"]["service"] in services
+            else 0,
+        )
+    except:
+        pass
+    # Category
+    try:
+        categories = logsource_content["category"]
+        st.session_state["content_data"]["logsource"]["category"] = st.selectbox(
+            "category",
+            categories,
+            index=categories.index(
+                st.session_state["content_data"]["logsource"]["category"]
+            )
+            if st.session_state["content_data"]["logsource"]["category"] in categories
+            else 0,
+        )
+    except:
+        pass
 
     # Detection
     detection_str = yaml.dump(
@@ -150,6 +182,7 @@ with st.sidebar:
     )
 
 st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
+
 yaml_output = yaml.safe_dump(
     st.session_state["content_data"],
     sort_keys=False,
@@ -158,7 +191,15 @@ yaml_output = yaml.safe_dump(
 )
 st.code(yaml_output)
 if st.button("Generate YAML File"):
-    filename = "SigmaHQ_Content_" + str(uuid.uuid4()) + ".yaml"
+    filename = ntpath.basename(selected_file)
+    st.success(f"File {filename} Ready to download!")
     download_button_str = st.download_button(
         label="Download YAML", data=yaml_output, file_name=filename, mime="text/yaml"
+    )
+
+    st.header("Contributing to SigmaHQ")
+    st.markdown(
+        """
+        Congratulations! You've just updated the Sigma rule and you're only a few steps away from a great contribution. Please follow our [contribution guide](https://github.com/SigmaHQ/sigma/blob/master/CONTRIBUTING.md) to get started.
+        """
     )

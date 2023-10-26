@@ -4,7 +4,7 @@ from PIL import Image
 
 
 st.set_page_config(
-    page_title="SigmaHQ Content Creation",
+    page_title="SigmaHQ Rule Creation",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -42,8 +42,9 @@ else:
 st.markdown(
     """
 
-        #### SigmaHQ GUI is built specifically for creating Sigma Security Content.
-        #### **👈🏽 Click the 🕵🏽 Sigma Content Creation on the left** to create your Sigma Analytics
+        #### Welcome to SigmaHQ GUI 🚀
+        #### This tool is built specifically to easily create and update Sigma Security Content.
+        #### **👈🏽 Click the 🕵🏽 Sigma Content Creation on the left** to create or update existing Sigma Analytics
 
     """
 )
@@ -58,8 +59,9 @@ with col2:
         """
         ### Want to learn more?
 
-        - Check out [SigmaHQ](https://github.com/SigmaHQ)
-        - Jump into our [documentation](https://github.com/SigmaHQ/wiki)
+        - Check out [SigmaHQ.io](https://sigmahq.io/)
+        - Deepen your Sigma knowledge by jumping into our [documentation](https://sigmahq.io/docs/guide/getting-started.html)
+        - Get insights about Sigma from the core maintainers by following our [blog](https://blog.sigmahq.io/)
         - Having issues? Sumbit a [new issue
           ](https://github.com/SigmaHQ/issues)
         """
