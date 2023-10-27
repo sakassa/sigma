@@ -7,6 +7,7 @@ st.set_page_config(
     page_title="SigmaHQ Rule Creation",
     layout="wide",
     initial_sidebar_state="expanded",
+    page_icon=Image.open("streamlit/favicon.png"),
 )
 custom_css = """
     <style>
@@ -42,7 +43,7 @@ else:
 st.markdown(
     """
 
-        #### Welcome to SigmaHQ GUI 🚀
+        #### Welcome to the SigmaHQ Rule Creation GUI 🚀
         #### This tool is built specifically to easily create and update Sigma Security Content.
         #### **👈🏽 Click the 🕵🏽 Sigma Content Creation on the left** to create or update existing Sigma Analytics
 
@@ -75,3 +76,17 @@ col4, col5, col6 = st.columns([0.2, 0.6, 0.2])
 with col5:
     image = Image.open("streamlit/sigma_logo_dark.png")
     st.image(image, width=300)
+
+tab1, tab2, tab3 = st.tabs(["Cat", "Dog", "Owl"])
+
+with tab1:
+    st.header("A cat")
+    st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
+
+with tab2:
+    st.header("A dog")
+    st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
+
+with tab3:
+    st.header("An owl")
+    st.image("https://static.streamlit.io/examples/owl.jpg", width=200)

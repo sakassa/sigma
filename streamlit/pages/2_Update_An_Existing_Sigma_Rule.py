@@ -1,3 +1,4 @@
+from datetime import datetime
 import streamlit as st
 import uuid
 import yaml
@@ -5,6 +6,17 @@ import glob
 import os
 import ntpath
 import json
+from PIL import Image
+
+
+# Remove empty values from a nested dict - https://stackoverflow.com/questions/27973988/how-to-remove-all-empty-fields-in-a-nested-dict
+# We need this to remove unnecessary logsource
+def clean_empty(d):
+    if isinstance(d, dict):
+        return {k: v for k, v in ((k, clean_empty(v)) for k, v in d.items()) if v}
+    if isinstance(d, list):
+        return [v for v in map(clean_empty, d) if v]
+    return d
 
 
 class MyDumper(yaml.Dumper):
@@ -16,6 +28,7 @@ st.set_page_config(
     page_title="🧰 SigmaHQ Rule Update",
     layout="wide",
     initial_sidebar_state="expanded",
+    page_icon=Image.open("streamlit/favicon.png"),
 )
 
 custom_css = """
@@ -113,6 +126,11 @@ with st.sidebar:
         "Author", st.session_state["content_data"]["author"]
     )
 
+    # Modified
+    st.session_state["content_data"]["modified"] = (
+        st.date_input("Modified", datetime.today())
+    ).strftime("%Y/%m/%d")
+
     # Tags
     tags = st.text_area(
         "Tags (comma-separated)", ", ".join(st.session_state["content_data"]["tags"])
@@ -177,6 +195,13 @@ with st.sidebar:
         st.session_state["content_data"]["detection"]
     )
 
+    # Falsepositives
+    refs = st.text_area(
+        "Falsepositives (newline-separated)",
+        "\n".join(st.session_state["content_data"]["falsepositives"]),
+    )
+    st.session_state["content_data"]["falsepositives"] = refs.split("\n")
+
     # Level
     levels = ["informational", "low", "medium", "high", "critical"]
     st.session_state["content_data"]["level"] = st.selectbox(
@@ -189,12 +214,15 @@ with st.sidebar:
 
 st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
 
+st.session_state["content_data"] = clean_empty(st.session_state["content_data"])
+
 # Just to make sure we don't dump unsafe code and at the same time enforce the indentation
 yaml_output_tmp = yaml.safe_dump(
     st.session_state["content_data"],
     sort_keys=False,
     default_flow_style=False,
     indent=4,
+    width=1000,
 )
 yaml_output_tmp = yaml.safe_load(yaml_output_tmp)
 yaml_output = yaml.dump(
@@ -203,14 +231,19 @@ yaml_output = yaml.dump(
     default_flow_style=False,
     Dumper=MyDumper,
     indent=4,
+    width=1000,
 )
 
 st.code(yaml_output)
-if st.button("Generate YAML File"):
+
+if st.button("⚙️ Generate YAML File"):
     filename = ntpath.basename(selected_file)
-    st.success(f"File {filename} Ready to download!")
+    st.success(f"{filename} Ready to download!")
     download_button_str = st.download_button(
-        label="Download YAML", data=yaml_output, file_name=filename, mime="text/yaml"
+        label="Download YAML",
+        data=yaml_output,
+        file_name=filename,
+        mime="text/yaml",
     )
 
     st.header("Contributing to SigmaHQ")
@@ -219,3 +252,15 @@ if st.button("Generate YAML File"):
         Congratulations! You've just updated the Sigma rule and you're only a few steps away from a great contribution. Please follow our [contribution guide](https://github.com/SigmaHQ/sigma/blob/master/CONTRIBUTING.md) to get started.
         """
     )
+
+st.link_button(
+    "⏳ Convert Using SigConverter",
+    url="https://sigconverter.io",
+)
+
+if st.button("✔️ Validate Sigma Rule"):
+    sigma_content = st.session_state["content_data"]
+    title = sigma_content["title"].istitle()
+
+    if not title:
+        st.warning("The rule title isn't using title casing")
