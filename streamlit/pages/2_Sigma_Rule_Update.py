@@ -6,6 +6,12 @@ import os
 import ntpath
 import json
 
+
+class MyDumper(yaml.Dumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(MyDumper, self).increase_indent(flow, False)
+
+
 st.set_page_config(
     page_title="🧰 SigmaHQ Rule Update",
     layout="wide",
@@ -183,10 +189,11 @@ with st.sidebar:
 
 st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
 
-yaml_output = yaml.safe_dump(
+yaml_output = yaml.dump(
     st.session_state["content_data"],
     sort_keys=False,
     default_flow_style=False,
+    Dumper=MyDumper,
     indent=4,
 )
 st.code(yaml_output)

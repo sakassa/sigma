@@ -171,10 +171,11 @@ with st.sidebar:
     )
 
 st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
-yaml_output = yaml.safe_dump(
+yaml_output = yaml.dump(
     st.session_state["content_data"],
     sort_keys=False,
     default_flow_style=False,
+    Dumper=MyDumper,
     indent=4,
 )
 st.code(yaml_output)
