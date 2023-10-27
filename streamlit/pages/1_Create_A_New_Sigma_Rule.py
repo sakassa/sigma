@@ -160,7 +160,10 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 if "ai_settings" not in st.session_state:
     st.session_state["ai_settings"] = {"api": "", "file": ""}
 
-if "content_data" not in st.session_state:
+if (
+    "content_data" not in st.session_state
+    or st.session_state["ai_settings"]["file"] != ""
+):
     st.session_state["content_data"] = {
         "title": "Enter the title of the rule",
         "status": "Select the status of the rule",
@@ -178,6 +181,7 @@ if "content_data" not in st.session_state:
         "falsepositives": ["Enter any known false positives"],
         "level": "Select the severity level",
     }
+    st.session_state["ai_settings"]["file"] = ""
 
 tab1, tab2 = st.tabs(["Rule View", "Logsource Taxonomy"])
 
