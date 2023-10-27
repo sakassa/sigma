@@ -200,7 +200,7 @@ with tab1:
         st.session_state["ai_settings"]["api"] = st.text_input(
             "OpenAI API Key",
             st.session_state["ai_settings"]["api"],
-            help="You can leverage AI to help generate automatic titles and description. All you need is OpenAI API key generated from https://platform.openai.com/account/api-keys",
+            help="You can leverage AI to help generate automatic titles and descriptions. All you need is an OpenAI API key generated from https://platform.openai.com/account/api-keys",
         )
 
         if st.button("Auto Generate Title and Description"):
