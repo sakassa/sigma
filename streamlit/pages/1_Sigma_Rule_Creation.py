@@ -171,13 +171,23 @@ with st.sidebar:
     )
 
 st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
-yaml_output = yaml.dump(
+
+# Just to make sure we don't dump unsafe code and at the same time enforce the indentation
+yaml_output_tmp = yaml.safe_dump(
     st.session_state["content_data"],
+    sort_keys=False,
+    default_flow_style=False,
+    indent=4,
+)
+yaml_output_tmp = yaml.safe_load(yaml_output_tmp)
+yaml_output = yaml.dump(
+    yaml_output_tmp,
     sort_keys=False,
     default_flow_style=False,
     Dumper=MyDumper,
     indent=4,
 )
+
 st.code(yaml_output)
 if st.button("Generate YAML File"):
     filename = "sigmahq_rule_" + str(uuid.uuid4()) + ".yml"
