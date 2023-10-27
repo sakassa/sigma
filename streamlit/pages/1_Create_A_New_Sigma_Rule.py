@@ -219,7 +219,6 @@ with tab1:
                         detection_logic = json.dumps(
                             st.session_state["content_data"]["detection"]
                         )
-                        print(detection_logic)
                         if len(detection_logic) < 50:
                             st.error(
                                 "The detection field must contains valid Sigma content"
@@ -227,15 +226,11 @@ with tab1:
                         else:
                             try:
                                 # Generate Data
-                                # ai_data = sigma_title_desc(
-                                #    st.session_state["ai_settings"]["api"],
-                                #    detection_logic,
-                                # )
-                                ai_data = {
-                                    "title": "Django Suspicious Operations",
-                                    "description": "Detects suspicious operations in Django web framework, such as disallowed hosts, invalid session keys, suspicious file operations, and permission denied errors.",
-                                }
-                                print(ai_data)
+                                ai_data = sigma_title_desc(
+                                    st.session_state["ai_settings"]["api"],
+                                    detection_logic,
+                                )
+
                                 # Fill Data
                                 st.session_state["content_data"]["title"] = ai_data[
                                     "title"
@@ -497,7 +492,6 @@ with tab1:
 
         # Logsource Test
         try:
-            print(st.session_state)
             sigma_content = sigma_content["logsource"]
         except KeyError:
             errors_num += 1
