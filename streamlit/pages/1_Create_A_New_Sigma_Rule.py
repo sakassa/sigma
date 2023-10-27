@@ -157,25 +157,27 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.session_state["ai_settings"] = {"api": ""}
+if "ai_settings" not in st.session_state:
+    st.session_state["ai_settings"] = {"api": "", "file": ""}
 
-st.session_state["content_data"] = {
-    "title": "Enter the title of the rule",
-    "status": "Select the status of the rule",
-    "description": "Enter a description for the rule",
-    "references": ["Enter references"],
-    "author": "Enter the author name",
-    "date": "Enter the date of creation",
-    "tags": ["Enter any relevant tags"],
-    "logsource": {
-        "product": "Enter the product name",
-        "service": "Enter the service name",
-        "category": "Enter the category name",
-    },
-    "detection": {"condition": "Enter the detection condition"},
-    "falsepositives": ["Enter any known false positives"],
-    "level": "Select the severity level",
-}
+if "content_data" not in st.session_state:
+    st.session_state["content_data"] = {
+        "title": "Enter the title of the rule",
+        "status": "Select the status of the rule",
+        "description": "Enter a description for the rule",
+        "references": ["Enter references"],
+        "author": "Enter the author name",
+        "date": "Enter the date of creation",
+        "tags": ["Enter any relevant tags"],
+        "logsource": {
+            "product": "Enter the product name",
+            "service": "Enter the service name",
+            "category": "Enter the category name",
+        },
+        "detection": {"condition": "Enter the detection condition"},
+        "falsepositives": ["Enter any known false positives"],
+        "level": "Select the severity level",
+    }
 
 tab1, tab2 = st.tabs(["Rule View", "Logsource Taxonomy"])
 
@@ -217,20 +219,35 @@ with tab1:
                         detection_logic = json.dumps(
                             st.session_state["content_data"]["detection"]
                         )
-                        if len(detection_logic) < 100:
+                        print(detection_logic)
+                        if len(detection_logic) < 50:
                             st.error(
                                 "The detection field must contains valid Sigma content"
                             )
                         else:
                             try:
-                                ai_data = sigma_title_desc(
-                                    st.session_state["ai_settings"]["api"],
-                                    detection_logic,
-                                )
-                                st.success(
-                                    "Successfully generated title and description"
-                                )
+                                # Generate Data
+                                # ai_data = sigma_title_desc(
+                                #    st.session_state["ai_settings"]["api"],
+                                #    detection_logic,
+                                # )
+                                ai_data = {
+                                    "title": "Django Suspicious Operations",
+                                    "description": "Detects suspicious operations in Django web framework, such as disallowed hosts, invalid session keys, suspicious file operations, and permission denied errors.",
+                                }
                                 print(ai_data)
+                                # Fill Data
+                                st.session_state["content_data"]["title"] = ai_data[
+                                    "title"
+                                ]
+
+                                st.session_state["content_data"][
+                                    "description"
+                                ] = ai_data["description"]
+
+                                st.success(
+                                    "Successfully generated the Title and Description"
+                                )
                             except openai.error.RateLimitError:
                                 st.error(
                                     "You exceeded your current quota, please check your plan and billing details."
@@ -295,6 +312,11 @@ with tab1:
 
         # Product
         products = [""] + logsource_content["product"]
+        try:
+            _ = st.session_state["content_data"]["logsource"]["product"]
+        except:
+            st.session_state["content_data"]["logsource"]["product"] = ""
+
         st.session_state["content_data"]["logsource"]["product"] = st.selectbox(
             "product",
             products,
@@ -305,8 +327,14 @@ with tab1:
             if st.session_state["content_data"]["logsource"]["product"] in products
             else 0,
         )
+
         # Service
         services = [""] + logsource_content["product"]
+        try:
+            _ = st.session_state["content_data"]["logsource"]["service"]
+        except KeyError:
+            st.session_state["content_data"]["logsource"]["service"] = ""
+
         st.session_state["content_data"]["logsource"]["service"] = st.selectbox(
             "service",
             services,
@@ -317,8 +345,14 @@ with tab1:
             if st.session_state["content_data"]["logsource"]["service"] in services
             else 0,
         )
+
         # Category
         categories = [""] + logsource_content["category"]
+        try:
+            _ = st.session_state["content_data"]["logsource"]["category"]
+        except KeyError:
+            st.session_state["content_data"]["logsource"]["category"] = ""
+
         st.session_state["content_data"]["logsource"]["category"] = st.selectbox(
             "category",
             categories,
@@ -346,6 +380,11 @@ with tab1:
         )
 
         # Falsepositives
+        try:
+            _ = st.session_state["content_data"]["falsepositives"]
+        except KeyError:
+            st.session_state["content_data"]["falsepositives"] = ""
+
         refs = st.text_area(
             "Falsepositives (newline-separated)",
             "\n".join(st.session_state["content_data"]["falsepositives"]),
@@ -364,16 +403,16 @@ with tab1:
 
     st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
 
-    st.session_state["content_data"] = clean_empty(st.session_state["content_data"])
+    session_state_tmp = clean_empty(st.session_state["content_data"])
 
     # Just to make sure we don't dump unsafe code and at the same time enforce the indentation
     yaml_output_tmp = yaml.safe_dump(
-        st.session_state["content_data"],
+        session_state_tmp,
         sort_keys=False,
         default_flow_style=False,
         indent=4,
+        width=1000,
     )
-
     yaml_output_tmp = yaml.safe_load(yaml_output_tmp)
 
     yaml_output = yaml.dump(
@@ -382,6 +421,7 @@ with tab1:
         default_flow_style=False,
         Dumper=MyDumper,
         indent=4,
+        width=1000,
     )
 
     st.code(yaml_output)

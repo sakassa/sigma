@@ -168,7 +168,11 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.session_state["ai_settings"] = {"api": ""}
+if "ai_settings" not in st.session_state:
+    st.session_state["ai_settings"] = {
+        "api": "",
+        "file": "",
+    }
 
 if "content_data" not in st.session_state:
     st.session_state["content_data"] = {
@@ -221,20 +225,26 @@ with tab1:
                         else:
                             try:
                                 # Generate Data
-                                ai_data = sigma_title_desc(
-                                    st.session_state["ai_settings"]["api"],
-                                    detection_logic,
-                                )
+                                # ai_data = sigma_title_desc(
+                                #    st.session_state["ai_settings"]["api"],
+                                #    detection_logic,
+                                # )
+                                ai_data = {
+                                    "title": "Django Suspicious Operations",
+                                    "description": "Detects suspicious operations in Django web framework, such as disallowed hosts, invalid session keys, suspicious file operations, and permission denied errors.",
+                                }
+                                print(ai_data)
                                 # Fill Data
                                 st.session_state["content_data"]["title"] = ai_data[
                                     "title"
                                 ]
+
                                 st.session_state["content_data"][
                                     "description"
                                 ] = ai_data["description"]
 
                                 st.success(
-                                    "Successfully generated title and description"
+                                    "Successfully generated the Title and Description"
                                 )
                             except openai.error.RateLimitError:
                                 st.error(
@@ -261,9 +271,11 @@ with tab1:
 
         # When a file is selected, read the file and update the session state
         if selected_file:
-            with open(selected_file, "r") as file:
-                file_content = yaml.safe_load(file)
-                st.session_state["content_data"] = file_content
+            if selected_file != st.session_state["ai_settings"]["file"]:
+                st.session_state["ai_settings"]["file"] = selected_file
+                with open(selected_file, "r") as file:
+                    file_content = yaml.safe_load(file)
+                    st.session_state["content_data"] = file_content
 
         # Title
         st.session_state["content_data"]["title"] = st.text_input(
@@ -396,11 +408,11 @@ with tab1:
 
     st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
 
-    st.session_state["content_data"] = clean_empty(st.session_state["content_data"])
+    session_state_tmp = clean_empty(st.session_state["content_data"])
 
     # Just to make sure we don't dump unsafe code and at the same time enforce the indentation
     yaml_output_tmp = yaml.safe_dump(
-        st.session_state["content_data"],
+        session_state_tmp,
         sort_keys=False,
         default_flow_style=False,
         indent=4,
