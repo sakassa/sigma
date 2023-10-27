@@ -4,7 +4,30 @@ import uuid
 import yaml
 import glob
 import json
+import openai
 from PIL import Image
+
+
+def sigma_title_desc(openai_api_key, sigma_rule_logic):
+    openai.api_key = openai_api_key
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a cybersecurity tool designed to create titles and descriptions for Sigma detection rules. The following Sigma rule examples show the correlation between the detection logic and the title and description.\n\nSigma rule examples:\n---\ntitle: File Encoded To Base64 Via Certutil.EXE\ndescription: Detects the execution of certutil with the \"encode\" flag to encode a file to base64. This can be abused by threat actors and attackers for data exfiltration\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection_img:\n        - Image|endswith: '\\certutil.exe'\n        - OriginalFileName: 'CertUtil.exe'\n    selection_cli:\n        CommandLine|contains:\n            - '-encode'\n            - '/encode'\n    condition: all of selection_*\n---\ntitle: Greedy File Deletion Using Del\ndescription: Detects execution of the \"del\" builtin command to remove files using greedy/wildcard expression. This is often used by malware to delete content of folders that perhaps contains the initial malware infection or to delete evidence.\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    # Example:\n    #   del C:\\ProgramData\\*.dll & exit\n    selection_img:\n        - Image|endswith: '\\cmd.exe'\n        - OriginalFileName: 'Cmd.Exe'\n    selection_del:\n        CommandLine|contains:\n            - 'del '\n            - 'erase '\n    selection_extensions:\n        CommandLine|contains:\n            - '\\\\\\*.au3'\n            - '\\\\\\*.dll'\n            - '\\\\\\*.exe'\n            - '\\\\\\*.js'\n    condition: all of selection_*\n---\ntitle: NtdllPipe Like Activity Execution\ndescription: Detects command that type the content of ntdll.dll to a different file or a pipe in order to evade AV / EDR detection. As seen being used in the POC NtdllPipe\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection:\n        CommandLine|contains:\n            - 'type %windir%\\system32\\ntdll.dll'\n            - 'type %systemroot%\\system32\\ntdll.dll'\n            - 'type c:\\windows\\system32\\ntdll.dll'\n            - '\\\\ntdll.dll > \\\\\\\\.\\\\pipe\\\\'\n    condition: selection\n---\ntitle: Unusual Parent Process For Cmd.EXE\ndescription: Detects suspicious parent process for cmd.exe\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection:\n        Image|endswith: '\\cmd.exe'\n        ParentImage|endswith:\n            - '\\csrss.exe'\n            - '\\ctfmon.exe'\n            - '\\dllhost.exe'\n            - '\\epad.exe'\n            - '\\FlashPlayerUpdateService.exe'\n            - '\\GoogleUpdate.exe'\n            - '\\jucheck.exe'\n            - '\\jusched.exe'\n            - '\\LogonUI.exe'\n            - '\\lsass.exe'\n            - '\\regsvr32.exe'\n            - '\\SearchIndexer.exe'\n            - '\\SearchProtocolHost.exe'\n            - '\\SIHClient.exe'\n            - '\\sihost.exe'\n            - '\\slui.exe'\n            - '\\spoolsv.exe'\n            - '\\sppsvc.exe'\n            - '\\taskhostw.exe'\n            - '\\unsecapp.exe'\n            - '\\WerFault.exe'\n            - '\\wergmgr.exe'\n            - '\\wlanext.exe'\n            - '\\WUDFHost.exe'\n    condition: selection\n---\ntitle: PUA - Ngrok Execution\ndescription: |\n  Detects the use of Ngrok, a utility used for port forwarding and tunneling, often used by threat actors to make local protected services publicly available.\n  Involved domains are bin.equinox.io for download and *.ngrok.io for connections.\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection1:\n        CommandLine|contains:\n            - ' tcp 139'\n            - ' tcp 445'\n            - ' tcp 3389'\n            - ' tcp 5985'\n            - ' tcp 5986'\n    selection2:\n        CommandLine|contains|all:\n            - ' start '\n            - '--all'\n            - '--config'\n            - '.yml'\n    selection3:\n        Image|endswith: 'ngrok.exe'\n        CommandLine|contains:\n            - ' tcp '\n            - ' http '\n            - ' authtoken '\n    selection4:\n        CommandLine|contains:\n            - '.exe authtoken '\n            - '.exe start --all'\n    condition: 1 of selection*\n---\ntitle: HackTool - SharpUp PrivEsc Tool Execution\ndescription: Detects the use of SharpUp, a tool for local privilege escalation\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection:\n        - Image|endswith: '\\SharpUp.exe'\n        - Description: 'SharpUp'\n        - CommandLine|contains:\n              - 'HijackablePaths'\n              - 'UnquotedServicePath'\n              - 'ProcessDLLHijack'\n              - 'ModifiableServiceBinaries'\n              - 'ModifiableScheduledTask'\n              - 'DomainGPPPassword'\n              - 'CachedGPPPassword'\n    condition: selection\n-----",
+            },
+            {
+                "role": "user",
+                "content": f"Create a Title and Description for the following Sigma rule. The output should be a JSON dictionary and only contain the title and description.\n\nSigma rule:\n---\ntitle: \ndescription: \n{sigma_rule_logic}",
+            },
+        ],
+        temperature=0.5,
+        max_tokens=350,
+    )
+    sigma_title_desc = json.loads(response["choices"][0]["message"]["content"])
+
+    return sigma_title_desc
 
 
 def test_title(title):
@@ -134,6 +157,8 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+st.session_state["ai_settings"] = {"api": ""}
+
 st.session_state["content_data"] = {
     "title": "Enter the title of the rule",
     "status": "Select the status of the rule",
@@ -152,227 +177,298 @@ st.session_state["content_data"] = {
     "level": "Select the severity level",
 }
 
-if "file_loaded_manually" not in st.session_state:
-    st.session_state["file_loaded_manually"] = False
-st.title("⚒️ SigmaHQ Rule Creation")
-st.header("Getting Started")
-st.markdown(
-    """
-    If this is your first time writing a sigma rule. We highly recommend you check the following resources
+tab1, tab2 = st.tabs(["Rule View", "Logsource Taxonomy"])
 
-    - 📚 [Writing You First Sigma Rule](https://sigmahq.io/docs/basics/rules.html)
-    - 🧬 [What Are Value Modifiers?](https://sigmahq.io/docs/basics/modifiers.html)
-    - 🔎 [Sigma Logsource](https://sigmahq.io/docs/basics/log-sources.html)
-    - 🏷️ [Sigma Tags](https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md)
-
-    Make sure to follow the SigmaHQ conventions regarding the different fields for the best experience possible during the review process
-
-    - [SigmaHQ Conventions](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_conventions.md)    
-    - [SigmaHQ Rule Title Convention](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_title_rule.md)
-    """
-)
-
-with st.sidebar:
-    st.title("Content Settings")
-    st.session_state["file_loaded_manually"] = False
-
-    # Title
-    st.session_state["content_data"]["title"] = st.text_input(
-        "Title", st.session_state["content_data"]["title"]
-    )
-
-    # Status
-    statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
-    st.session_state["content_data"]["status"] = st.selectbox(
-        "Status",
-        statuses,
-        index=statuses.index(st.session_state["content_data"]["status"])
-        if st.session_state["content_data"]["status"] in statuses
-        else 0,
-    )
-
-    # Description
-    st.session_state["content_data"]["description"] = st.text_area(
-        "Description", st.session_state["content_data"]["description"]
-    )
-
-    # References
-    refs = st.text_area(
-        "References (newline-separated)",
-        "\n".join(st.session_state["content_data"]["references"]),
-    )
-    st.session_state["content_data"]["references"] = refs.split("\n")
-
-    # Author
-    st.session_state["content_data"]["author"] = st.text_input(
-        "Author", st.session_state["content_data"]["author"]
-    )
-
-    # Date
-    st.session_state["content_data"]["date"] = (
-        st.date_input("Date", datetime.today())
-    ).strftime("%Y/%m/%d")
-
-    # Tags
-    tags = st.text_area(
-        "Tags (comma-separated)", ", ".join(st.session_state["content_data"]["tags"])
-    )
-    st.session_state["content_data"]["tags"] = tags.split(", ")
-
-    # Logsource
-
-    # Product
-    products = [""] + logsource_content["product"]
-    st.session_state["content_data"]["logsource"]["product"] = st.selectbox(
-        "product",
-        products,
-        help="You can leave this field empty if its not required by your rule. It will automatically be removed during tha Yaml generation",
-        index=products.index(st.session_state["content_data"]["logsource"]["product"])
-        if st.session_state["content_data"]["logsource"]["product"] in products
-        else 0,
-    )
-    # Service
-    services = [""] + logsource_content["product"]
-    st.session_state["content_data"]["logsource"]["service"] = st.selectbox(
-        "service",
-        services,
-        help="You can leave this field empty if its not required by your rule. It will automatically be removed during tha Yaml generation",
-        index=services.index(st.session_state["content_data"]["logsource"]["service"])
-        if st.session_state["content_data"]["logsource"]["service"] in services
-        else 0,
-    )
-    # Category
-    categories = [""] + logsource_content["category"]
-    st.session_state["content_data"]["logsource"]["category"] = st.selectbox(
-        "category",
-        categories,
-        help="You can leave this field empty if its not required by your rule. It will automatically be removed during tha Yaml generation",
-        index=categories.index(
-            st.session_state["content_data"]["logsource"]["category"]
-        )
-        if st.session_state["content_data"]["logsource"]["category"] in categories
-        else 0,
-    )
-
-    # Detection
-    detection_str = yaml.dump(
-        st.session_state["content_data"]["detection"], default_flow_style=False
-    )
-    st.session_state["content_data"]["detection"] = st.text_area(
-        "Detection",
-        detection_str,
-        help="Example:\nselection_domain:\n    Contents|contains:\n        - '.githubusercontent.com'\n    selection_extension:\n        TargetFilename|contains:\n            - '.exe:Zone'\n    condition: all of selection*",
-    )
-    st.session_state["content_data"]["detection"] = yaml.safe_load(
-        st.session_state["content_data"]["detection"]
-    )
-
-    # Falsepositives
-    refs = st.text_area(
-        "Falsepositives (newline-separated)",
-        "\n".join(st.session_state["content_data"]["falsepositives"]),
-    )
-    st.session_state["content_data"]["falsepositives"] = refs.split("\n")
-
-    # Level
-    levels = ["informational", "low", "medium", "high", "critical"]
-    st.session_state["content_data"]["level"] = st.selectbox(
-        "Level",
-        levels,
-        index=levels.index(st.session_state["content_data"]["level"])
-        if st.session_state["content_data"]["level"] in levels
-        else 0,
-    )
-
-st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
-
-st.session_state["content_data"] = clean_empty(st.session_state["content_data"])
-
-# Just to make sure we don't dump unsafe code and at the same time enforce the indentation
-yaml_output_tmp = yaml.safe_dump(
-    st.session_state["content_data"],
-    sort_keys=False,
-    default_flow_style=False,
-    indent=4,
-)
-
-yaml_output_tmp = yaml.safe_load(yaml_output_tmp)
-
-yaml_output = yaml.dump(
-    yaml_output_tmp,
-    sort_keys=False,
-    default_flow_style=False,
-    Dumper=MyDumper,
-    indent=4,
-)
-
-st.code(yaml_output)
-if st.button("⚙️ Generate YAML File"):
-    filename = "sigmahq_rule_" + str(uuid.uuid4()) + ".yml"
-    st.success(f"{filename} Is Ready to Download!")
-    st.info(
-        f"Please don't forgot to follow the SigmaHQ file naming convention before contribution your rule https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/Sigmahq_filename_rule.md"
-    )
-    download_button_str = st.download_button(
-        label="Download YAML", data=yaml_output, file_name=filename, mime="text/yaml"
-    )
-
-    st.header("Contributing to SigmaHQ")
+with tab1:
+    st.title("⚒️ SigmaHQ Rule Creation")
+    st.header("Getting Started")
     st.markdown(
         """
-        Congratulations! You've just generated a Sigma rule and you're only a few steps away from a great contribution. Please follow our [contribution guide](https://github.com/SigmaHQ/sigma/blob/master/CONTRIBUTING.md) to get started.
+        If this is your first time writing a sigma rule. We highly recommend you check the following resources
+
+        - 📚 [Writing You First Sigma Rule](https://sigmahq.io/docs/basics/rules.html)
+        - 🧬 [What Are Value Modifiers?](https://sigmahq.io/docs/basics/modifiers.html)
+        - 🔎 [Sigma Logsource](https://sigmahq.io/docs/basics/log-sources.html)
+        - 🏷️ [Sigma Tags](https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md)
+
+        Make sure to follow the SigmaHQ conventions regarding the different fields for the best experience possible during the review process
+
+        - [SigmaHQ Conventions](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_conventions.md)    
+        - [SigmaHQ Rule Title Convention](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_title_rule.md)
         """
     )
 
-st.link_button(
-    "⏳ Convert Using SigConverter",
-    url="https://sigconverter.io",
-)
+    with st.sidebar:
+        st.title("AI Settings")
+        st.session_state["ai_settings"]["api"] = st.text_input(
+            "OpenAI API Key",
+            st.session_state["ai_settings"]["api"],
+            help="You can leverage AI to help generate automatic titles and description. All you need is OpenAI API key generated from https://platform.openai.com/account/api-keys",
+        )
 
-if st.button("✔️ Validate Sigma Rule"):
-    errors_num = 0
+        if st.button("Auto Generate Title and Description"):
+            if st.session_state["ai_settings"]["api"]:
+                if len(st.session_state["ai_settings"]["api"]) != 51:
+                    st.error(
+                        "The API Key seems to be invalid, please provide another one"
+                    )
+                else:
+                    if st.session_state["content_data"]["detection"]:
+                        detection_logic = json.dumps(
+                            st.session_state["content_data"]["detection"]
+                        )
+                        if len(detection_logic) < 100:
+                            st.error(
+                                "The detection field must contains valid Sigma content"
+                            )
+                        else:
+                            try:
+                                ai_data = sigma_title_desc(
+                                    st.session_state["ai_settings"]["api"],
+                                    detection_logic,
+                                )
+                                st.success(
+                                    "Successfully generated title and description"
+                                )
+                                print(ai_data)
+                            except openai.error.RateLimitError:
+                                st.error(
+                                    "You exceeded your current quota, please check your plan and billing details."
+                                )
+                            except:
+                                st.error("Unknown Error")
 
-    # Title Test
-    sigma_content = st.session_state["content_data"]
-    title = sigma_content["title"]
-    title_errors = test_title(title)
-    if title_errors:
-        errors_num += 1
-        error_msg = ""
-        for err in title_errors:
-            error_msg += "- " + err + "\n"
-        st.warning(
-            f"""
-            The rule has a non-conform 'title' field. Please check: https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide#title\n\n
-            {error_msg}
+                    else:
+                        st.error("The detection field must not be empty")
+            else:
+                st.error(
+                    "An OpenAI API Key is required to use the Auto Generate feature"
+                )
+
+        st.title("Content Settings")
+
+        # Title
+        st.session_state["content_data"]["title"] = st.text_input(
+            "Title", st.session_state["content_data"]["title"]
+        )
+
+        # Status
+        statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
+        st.session_state["content_data"]["status"] = st.selectbox(
+            "Status",
+            statuses,
+            index=statuses.index(st.session_state["content_data"]["status"])
+            if st.session_state["content_data"]["status"] in statuses
+            else 0,
+        )
+
+        # Description
+        st.session_state["content_data"]["description"] = st.text_area(
+            "Description", st.session_state["content_data"]["description"]
+        )
+
+        # References
+        refs = st.text_area(
+            "References (newline-separated)",
+            "\n".join(st.session_state["content_data"]["references"]),
+        )
+        st.session_state["content_data"]["references"] = refs.split("\n")
+
+        # Author
+        st.session_state["content_data"]["author"] = st.text_input(
+            "Author", st.session_state["content_data"]["author"]
+        )
+
+        # Date
+        st.session_state["content_data"]["date"] = (
+            st.date_input("Date", datetime.today())
+        ).strftime("%Y/%m/%d")
+
+        # Tags
+        tags = st.text_area(
+            "Tags (comma-separated)",
+            ", ".join(st.session_state["content_data"]["tags"]),
+        )
+        st.session_state["content_data"]["tags"] = tags.split(", ")
+
+        # Logsource
+
+        # Product
+        products = [""] + logsource_content["product"]
+        st.session_state["content_data"]["logsource"]["product"] = st.selectbox(
+            "product",
+            products,
+            help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
+            index=products.index(
+                st.session_state["content_data"]["logsource"]["product"]
+            )
+            if st.session_state["content_data"]["logsource"]["product"] in products
+            else 0,
+        )
+        # Service
+        services = [""] + logsource_content["product"]
+        st.session_state["content_data"]["logsource"]["service"] = st.selectbox(
+            "service",
+            services,
+            help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
+            index=services.index(
+                st.session_state["content_data"]["logsource"]["service"]
+            )
+            if st.session_state["content_data"]["logsource"]["service"] in services
+            else 0,
+        )
+        # Category
+        categories = [""] + logsource_content["category"]
+        st.session_state["content_data"]["logsource"]["category"] = st.selectbox(
+            "category",
+            categories,
+            help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
+            index=categories.index(
+                st.session_state["content_data"]["logsource"]["category"]
+            )
+            if st.session_state["content_data"]["logsource"]["category"] in categories
+            else 0,
+        )
+
+        # Detection
+        detection_str = yaml.safe_dump(
+            st.session_state["content_data"]["detection"],
+            default_flow_style=False,
+            sort_keys=False,
+        )
+        st.session_state["content_data"]["detection"] = st.text_area(
+            "Detection",
+            detection_str,
+            help="Example:\nselection_domain:\n    Contents|contains:\n        - '.githubusercontent.com'\n    selection_extension:\n        TargetFilename|contains:\n            - '.exe:Zone'\n    condition: all of selection*",
+        )
+        st.session_state["content_data"]["detection"] = yaml.safe_load(
+            st.session_state["content_data"]["detection"]
+        )
+
+        # Falsepositives
+        refs = st.text_area(
+            "Falsepositives (newline-separated)",
+            "\n".join(st.session_state["content_data"]["falsepositives"]),
+        )
+        st.session_state["content_data"]["falsepositives"] = refs.split("\n")
+
+        # Level
+        levels = ["informational", "low", "medium", "high", "critical"]
+        st.session_state["content_data"]["level"] = st.selectbox(
+            "Level",
+            levels,
+            index=levels.index(st.session_state["content_data"]["level"])
+            if st.session_state["content_data"]["level"] in levels
+            else 0,
+        )
+
+    st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
+
+    st.session_state["content_data"] = clean_empty(st.session_state["content_data"])
+
+    # Just to make sure we don't dump unsafe code and at the same time enforce the indentation
+    yaml_output_tmp = yaml.safe_dump(
+        st.session_state["content_data"],
+        sort_keys=False,
+        default_flow_style=False,
+        indent=4,
+    )
+
+    yaml_output_tmp = yaml.safe_load(yaml_output_tmp)
+
+    yaml_output = yaml.dump(
+        yaml_output_tmp,
+        sort_keys=False,
+        default_flow_style=False,
+        Dumper=MyDumper,
+        indent=4,
+    )
+
+    st.code(yaml_output)
+    if st.button("⚙️ Generate YAML File"):
+        filename = "sigmahq_rule_" + str(uuid.uuid4()) + ".yml"
+        st.success(f"{filename} Is Ready to Download!")
+        st.info(
+            f"Please don't forgot to follow the SigmaHQ file naming convention before contribution your rule https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/Sigmahq_filename_rule.md"
+        )
+        download_button_str = st.download_button(
+            label="Download YAML",
+            data=yaml_output,
+            file_name=filename,
+            mime="text/yaml",
+        )
+
+        st.header("Contributing to SigmaHQ")
+        st.markdown(
+            """
+            Congratulations! You've just generated a Sigma rule and you're only a few steps away from a great contribution. Please follow our [contribution guide](https://github.com/SigmaHQ/sigma/blob/master/CONTRIBUTING.md) to get started.
             """
         )
 
-    # False Positive Test
-    sigma_content = st.session_state["content_data"]
-    falsepositives = sigma_content["falsepositives"]
-    falsepositives_errors = test_falsepositives(falsepositives)
-    if falsepositives_errors:
-        errors_num += 1
-        error_msg = ""
-        for err in falsepositives_errors:
-            error_msg += "- " + err + "\n"
-        st.warning(
-            f"""
-            The rule has a non-conform false positives section:\n\n
-            {error_msg}
-            """
-        )
+    st.link_button(
+        "⏳ Convert Using SigConverter",
+        url="https://sigconverter.io",
+    )
 
-    # Logsource Test
-    try:
-        print(st.session_state)
-        sigma_content = sigma_content["logsource"]
-    except KeyError:
-        errors_num += 1
-        st.warning(
-            "The rule has a missing 'logsource' field. Please check: https://sigmahq.io/docs/basics/log-sources.html"
-        )
+    if st.button("✔️ Validate Sigma Rule"):
+        errors_num = 0
 
-    if errors_num == 0:
-        st.success("The tests have successfully passed")
+        # Title Test
+        sigma_content = st.session_state["content_data"]
+        try:
+            title = sigma_content["title"]
+            title_errors = test_title(title)
+        except KeyError:
+            title_errors = []
+            st.warning(
+                f"The rule has a missing 'title' field. Please check: https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide#title"
+            )
+        if title_errors:
+            errors_num += 1
+            error_msg = ""
+            for err in title_errors:
+                error_msg += "- " + err + "\n"
+            st.warning(
+                f"""
+                The rule has a non-conform 'title' field. Please check: https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide#title\n\n
+                {error_msg}
+                """
+            )
+
+        # False Positive Test
+        sigma_content = st.session_state["content_data"]
+        try:
+            falsepositives = sigma_content["falsepositives"]
+            falsepositives_errors = test_falsepositives(falsepositives)
+        except KeyError:
+            falsepositives_errors = []
+            st.warning(f"The rule has a missing 'falsepositives' field.")
+        if falsepositives_errors:
+            errors_num += 1
+            error_msg = ""
+            for err in falsepositives_errors:
+                error_msg += "- " + err + "\n"
+            st.warning(
+                f"""
+                The rule has a non-conform false positives section:\n\n
+                {error_msg}
+                """
+            )
+
+        # Logsource Test
+        try:
+            print(st.session_state)
+            sigma_content = sigma_content["logsource"]
+        except KeyError:
+            errors_num += 1
+            st.warning(
+                "The rule has a missing 'logsource' field. Please check: https://sigmahq.io/docs/basics/log-sources.html"
+            )
+
+        if errors_num == 0:
+            st.success("The tests have successfully passed")
+
+with tab2:
+    with open("streamlit/taxonomy.md", "r") as f:
+        content = f.read()
+    st.markdown(content, unsafe_allow_html=True)
