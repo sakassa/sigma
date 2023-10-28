@@ -2,7 +2,7 @@ from datetime import datetime
 import streamlit as st
 import uuid
 import yaml
-import glob
+import uuid
 import json
 import openai
 from PIL import Image
@@ -166,6 +166,7 @@ if (
 ):
     st.session_state["content_data"] = {
         "title": "Enter the title of the rule",
+        "id": str(uuid.uuid4()),
         "status": "Select the status of the rule",
         "description": "Enter a description for the rule",
         "references": ["Enter references"],
