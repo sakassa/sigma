@@ -2,13 +2,14 @@
 # Version: 10-23
 
 from datetime import datetime
-import streamlit as st
-import uuid
-import yaml
-import uuid
+from PIL import Image
 import json
 import openai
-from PIL import Image
+import pyperclip
+import streamlit as st
+import uuid
+import uuid
+import yaml
 
 
 def sigma_title_desc(openai_api_key, sigma_rule_logic):
@@ -165,12 +166,13 @@ if "ai_settings" not in st.session_state:
     st.session_state["ai_settings"] = {"api": "", "file": ""}
 
 if (
-    "content_data" not in st.session_state
+    "content_data_new" not in st.session_state
     or st.session_state["ai_settings"]["file"] != ""
 ):
-    st.session_state["content_data"] = {
+    st.session_state["content_data_new"] = {
         "title": "Enter the title of the rule",
         "id": str(uuid.uuid4()),
+        "related": [{"id": "", "type": ""}],
         "status": "Select the status of the rule",
         "description": "Enter a description for the rule",
         "references": ["Enter references"],
@@ -188,226 +190,228 @@ if (
     }
     st.session_state["ai_settings"]["file"] = ""
 
-tab1, tab2 = st.tabs(["Rule View", "Logsource Taxonomy"])
+st.title("⚒️ SigmaHQ Rule Creation")
 
-with tab1:
-    st.title("⚒️ SigmaHQ Rule Creation")
-    st.header("Getting Started")
-    st.markdown(
-        """
-        If this is your first time writing a sigma rule. We highly recommend you check the following resources
+tab1, tab2, tab3 = st.tabs(["Rule View", "Getting Started", "Logsource Taxonomy"])
 
-        - 📚 [Writing You First Sigma Rule](https://sigmahq.io/docs/basics/rules.html)
-        - 🧬 [What Are Value Modifiers?](https://sigmahq.io/docs/basics/modifiers.html)
-        - 🔎 [Sigma Logsource](https://sigmahq.io/docs/basics/log-sources.html)
-        - 🏷️ [Sigma Tags](https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md)
-
-        Make sure to follow the SigmaHQ conventions regarding the different fields for the best experience possible during the review process
-
-        - [SigmaHQ Conventions](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_conventions.md)    
-        - [SigmaHQ Rule Title Convention](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_title_rule.md)
-        """
+with st.sidebar:
+    st.title("AI Settings")
+    st.session_state["ai_settings"]["api"] = st.text_input(
+        "OpenAI API Key",
+        st.session_state["ai_settings"]["api"],
+        help="You can leverage AI to help generate automatic titles and descriptions. All you need is an OpenAI API key generated from https://platform.openai.com/account/api-keys",
     )
 
-    with st.sidebar:
-        st.title("AI Settings")
-        st.session_state["ai_settings"]["api"] = st.text_input(
-            "OpenAI API Key",
-            st.session_state["ai_settings"]["api"],
-            help="You can leverage AI to help generate automatic titles and descriptions. All you need is an OpenAI API key generated from https://platform.openai.com/account/api-keys",
-        )
-
-        if st.button("Auto Generate Title and Description"):
-            if st.session_state["ai_settings"]["api"]:
-                if len(st.session_state["ai_settings"]["api"]) != 51:
-                    st.error(
-                        "The API Key seems to be invalid, please provide another one"
-                    )
-                else:
-                    if st.session_state["content_data"]["detection"]:
-                        detection_logic = json.dumps(
-                            st.session_state["content_data"]["detection"]
-                        )
-                        if len(detection_logic) < 50:
-                            st.error(
-                                "The detection field must contains valid Sigma content"
-                            )
-                        else:
-                            try:
-                                # Generate Data
-                                ai_data = sigma_title_desc(
-                                    st.session_state["ai_settings"]["api"],
-                                    detection_logic,
-                                )
-
-                                # Fill Data
-                                st.session_state["content_data"]["title"] = ai_data[
-                                    "title"
-                                ]
-
-                                st.session_state["content_data"][
-                                    "description"
-                                ] = ai_data["description"]
-
-                                st.success(
-                                    "Successfully generated the Title and Description"
-                                )
-                            except openai.error.RateLimitError:
-                                st.error(
-                                    "You exceeded your current quota, please check your plan and billing details."
-                                )
-                            except:
-                                st.error("Unknown Error")
-
-                    else:
-                        st.error("The detection field must not be empty")
+    if st.button("Auto Generate Title and Description"):
+        if st.session_state["ai_settings"]["api"]:
+            if len(st.session_state["ai_settings"]["api"]) != 51:
+                st.error("The API Key seems to be invalid, please provide another one")
             else:
-                st.error(
-                    "An OpenAI API Key is required to use the Auto Generate feature"
-                )
+                if st.session_state["content_data_new"]["detection"]:
+                    detection_logic = json.dumps(
+                        st.session_state["content_data_new"]["detection"]
+                    )
+                    if len(detection_logic) < 50:
+                        st.error(
+                            "The detection field must contains valid Sigma content"
+                        )
+                    else:
+                        try:
+                            # Generate Data
+                            ai_data = sigma_title_desc(
+                                st.session_state["ai_settings"]["api"],
+                                detection_logic,
+                            )
 
-        st.title("Content Settings")
+                            # Fill Data
+                            st.session_state["content_data_new"]["title"] = ai_data[
+                                "title"
+                            ]
 
-        # Title
-        st.session_state["content_data"]["title"] = st.text_input(
-            "Title", st.session_state["content_data"]["title"]
+                            st.session_state["content_data_new"][
+                                "description"
+                            ] = ai_data["description"]
+
+                            st.success(
+                                "Successfully generated the Title and Description"
+                            )
+                        except openai.error.RateLimitError:
+                            st.error(
+                                "You exceeded your current quota, please check your plan and billing details."
+                            )
+                        except:
+                            st.error("Unknown Error")
+
+                else:
+                    st.error("The detection field must not be empty")
+        else:
+            st.error("An OpenAI API Key is required to use the Auto Generate feature")
+
+    st.title("Content Settings")
+
+    # Title
+    st.session_state["content_data_new"]["title"] = st.text_input(
+        "Title", st.session_state["content_data_new"]["title"]
+    )
+
+    # Related
+    st.session_state["content_data_new"]["related"][0]["id"] = st.text_input(
+        "Related Id", st.session_state["content_data_new"]["related"][0]["id"]
+    )
+
+    related_type = ["", "derived", "merged", "obsoletes", "renamed", "similar"]
+    st.session_state["content_data_new"]["related"][0]["type"] = st.selectbox(
+        "Related Type",
+        related_type,
+        index=related_type.index(
+            st.session_state["content_data_new"]["related"][0]["type"]
         )
+        if st.session_state["content_data_new"]["related"][0]["type"] in related_type
+        else 0,
+    )
 
-        # Status
-        statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
-        st.session_state["content_data"]["status"] = st.selectbox(
-            "Status",
-            statuses,
-            index=statuses.index(st.session_state["content_data"]["status"])
-            if st.session_state["content_data"]["status"] in statuses
-            else 0,
+    # Status
+    statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
+    st.session_state["content_data_new"]["status"] = st.selectbox(
+        "Status",
+        statuses,
+        index=statuses.index(st.session_state["content_data_new"]["status"])
+        if st.session_state["content_data_new"]["status"] in statuses
+        else 0,
+    )
+
+    # Description
+    st.session_state["content_data_new"]["description"] = st.text_area(
+        "Description", st.session_state["content_data_new"]["description"]
+    )
+
+    # References
+    refs = st.text_area(
+        "References (newline-separated)",
+        "\n".join(st.session_state["content_data_new"]["references"]),
+    )
+    st.session_state["content_data_new"]["references"] = refs.split("\n")
+
+    # Author
+    st.session_state["content_data_new"]["author"] = st.text_input(
+        "Author", st.session_state["content_data_new"]["author"]
+    )
+
+    # Date
+    st.session_state["content_data_new"]["date"] = (
+        st.date_input("Date", datetime.today())
+    ).strftime("%Y/%m/%d")
+
+    # Tags
+    tags = st.text_area(
+        "Tags (comma-separated)",
+        ", ".join(st.session_state["content_data_new"]["tags"]),
+    )
+    st.session_state["content_data_new"]["tags"] = tags.split(", ")
+
+    # Logsource
+
+    # Product
+    products = [""] + logsource_content["product"]
+    try:
+        _ = st.session_state["content_data_new"]["logsource"]["product"]
+    except:
+        st.session_state["content_data_new"]["logsource"]["product"] = ""
+
+    st.session_state["content_data_new"]["logsource"]["product"] = st.selectbox(
+        "product",
+        products,
+        help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
+        index=products.index(
+            st.session_state["content_data_new"]["logsource"]["product"]
         )
+        if st.session_state["content_data_new"]["logsource"]["product"] in products
+        else 0,
+    )
 
-        # Description
-        st.session_state["content_data"]["description"] = st.text_area(
-            "Description", st.session_state["content_data"]["description"]
+    # Service
+    services = [""] + logsource_content["product"]
+    try:
+        _ = st.session_state["content_data_new"]["logsource"]["service"]
+    except KeyError:
+        st.session_state["content_data_new"]["logsource"]["service"] = ""
+
+    st.session_state["content_data_new"]["logsource"]["service"] = st.selectbox(
+        "service",
+        services,
+        help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
+        index=services.index(
+            st.session_state["content_data_new"]["logsource"]["service"]
         )
+        if st.session_state["content_data_new"]["logsource"]["service"] in services
+        else 0,
+    )
 
-        # References
-        refs = st.text_area(
-            "References (newline-separated)",
-            "\n".join(st.session_state["content_data"]["references"]),
+    # Category
+    categories = [""] + logsource_content["category"]
+    try:
+        _ = st.session_state["content_data_new"]["logsource"]["category"]
+    except KeyError:
+        st.session_state["content_data_new"]["logsource"]["category"] = ""
+
+    st.session_state["content_data_new"]["logsource"]["category"] = st.selectbox(
+        "category",
+        categories,
+        help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
+        index=categories.index(
+            st.session_state["content_data_new"]["logsource"]["category"]
         )
-        st.session_state["content_data"]["references"] = refs.split("\n")
+        if st.session_state["content_data_new"]["logsource"]["category"] in categories
+        else 0,
+    )
 
-        # Author
-        st.session_state["content_data"]["author"] = st.text_input(
-            "Author", st.session_state["content_data"]["author"]
-        )
+    # Falsepositives
+    try:
+        _ = st.session_state["content_data_new"]["falsepositives"]
+    except KeyError:
+        st.session_state["content_data_new"]["falsepositives"] = ""
 
-        # Date
-        st.session_state["content_data"]["date"] = (
-            st.date_input("Date", datetime.today())
-        ).strftime("%Y/%m/%d")
+    refs = st.text_area(
+        "Falsepositives (newline-separated)",
+        "\n".join(st.session_state["content_data_new"]["falsepositives"]),
+    )
+    st.session_state["content_data_new"]["falsepositives"] = refs.split("\n")
 
-        # Tags
-        tags = st.text_area(
-            "Tags (comma-separated)",
-            ", ".join(st.session_state["content_data"]["tags"]),
-        )
-        st.session_state["content_data"]["tags"] = tags.split(", ")
+    # Level
+    levels = ["informational", "low", "medium", "high", "critical"]
+    st.session_state["content_data_new"]["level"] = st.selectbox(
+        "Level",
+        levels,
+        index=levels.index(st.session_state["content_data_new"]["level"])
+        if st.session_state["content_data_new"]["level"] in levels
+        else 0,
+    )
 
-        # Logsource
 
-        # Product
-        products = [""] + logsource_content["product"]
-        try:
-            _ = st.session_state["content_data"]["logsource"]["product"]
-        except:
-            st.session_state["content_data"]["logsource"]["product"] = ""
+with tab1:
+    st.write("<h3>Detection</h3>", unsafe_allow_html=True)
 
-        st.session_state["content_data"]["logsource"]["product"] = st.selectbox(
-            "product",
-            products,
-            help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
-            index=products.index(
-                st.session_state["content_data"]["logsource"]["product"]
-            )
-            if st.session_state["content_data"]["logsource"]["product"] in products
-            else 0,
-        )
+    # Detection
+    detection_str = yaml.safe_dump(
+        st.session_state["content_data_new"]["detection"],
+        default_flow_style=False,
+        sort_keys=False,
+    )
+    st.session_state["content_data_new"]["detection"] = st.text_area(
+        "",
+        detection_str,
+        help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
+    )
+    st.session_state["content_data_new"]["detection"] = yaml.safe_load(
+        st.session_state["content_data_new"]["detection"]
+    )
 
-        # Service
-        services = [""] + logsource_content["product"]
-        try:
-            _ = st.session_state["content_data"]["logsource"]["service"]
-        except KeyError:
-            st.session_state["content_data"]["logsource"]["service"] = ""
+    st.markdown(
+        "### Sigma YAML Output",
+        unsafe_allow_html=True,
+    )
 
-        st.session_state["content_data"]["logsource"]["service"] = st.selectbox(
-            "service",
-            services,
-            help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
-            index=services.index(
-                st.session_state["content_data"]["logsource"]["service"]
-            )
-            if st.session_state["content_data"]["logsource"]["service"] in services
-            else 0,
-        )
-
-        # Category
-        categories = [""] + logsource_content["category"]
-        try:
-            _ = st.session_state["content_data"]["logsource"]["category"]
-        except KeyError:
-            st.session_state["content_data"]["logsource"]["category"] = ""
-
-        st.session_state["content_data"]["logsource"]["category"] = st.selectbox(
-            "category",
-            categories,
-            help="Check the taxonomy tab for more information on the logsource mappings supported by Sigma",
-            index=categories.index(
-                st.session_state["content_data"]["logsource"]["category"]
-            )
-            if st.session_state["content_data"]["logsource"]["category"] in categories
-            else 0,
-        )
-
-        # Detection
-        detection_str = yaml.safe_dump(
-            st.session_state["content_data"]["detection"],
-            default_flow_style=False,
-            sort_keys=False,
-        )
-        st.session_state["content_data"]["detection"] = st.text_area(
-            "Detection",
-            detection_str,
-            help="Example:\nselection_domain:\n    Contents|contains:\n        - '.githubusercontent.com'\n    selection_extension:\n        TargetFilename|contains:\n            - '.exe:Zone'\n    condition: all of selection*",
-        )
-        st.session_state["content_data"]["detection"] = yaml.safe_load(
-            st.session_state["content_data"]["detection"]
-        )
-
-        # Falsepositives
-        try:
-            _ = st.session_state["content_data"]["falsepositives"]
-        except KeyError:
-            st.session_state["content_data"]["falsepositives"] = ""
-
-        refs = st.text_area(
-            "Falsepositives (newline-separated)",
-            "\n".join(st.session_state["content_data"]["falsepositives"]),
-        )
-        st.session_state["content_data"]["falsepositives"] = refs.split("\n")
-
-        # Level
-        levels = ["informational", "low", "medium", "high", "critical"]
-        st.session_state["content_data"]["level"] = st.selectbox(
-            "Level",
-            levels,
-            index=levels.index(st.session_state["content_data"]["level"])
-            if st.session_state["content_data"]["level"] in levels
-            else 0,
-        )
-
-    st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
-
-    session_state_tmp = clean_empty(st.session_state["content_data"])
+    session_state_tmp = clean_empty(st.session_state["content_data_new"])
 
     # Just to make sure we don't dump unsafe code and at the same time enforce the indentation
     yaml_output_tmp = yaml.safe_dump(
@@ -428,8 +432,44 @@ with tab1:
         width=1000,
     )
 
-    st.code(yaml_output)
-    if st.button("⚙️ Generate YAML File"):
+    st.code(yaml_output, language="yaml")
+
+    st.markdown(
+        """
+            <style>
+                div[data-testid="column"] {
+                    width: fit-content !important;
+                    flex: unset;
+                }
+                div[data-testid="column"] * {
+                    width: fit-content !important;
+                }
+            </style>
+            """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+
+    generate_bool = False
+    validate_bool = False
+
+    with col1:
+        if st.button("⚙️ Generate YAML File"):
+            generate_bool = True
+
+    with col2:
+        if st.button("✔️ Validate Sigma Rule"):
+            validate_bool = True
+
+    with col3:
+        pyperclip.copy(yaml_output)
+        st.link_button(
+            "⏳ Convert Using SigConverter",
+            url="https://sigconverter.io",
+        )
+
+    if generate_bool:
         filename = "sigmahq_rule_" + str(uuid.uuid4()) + ".yml"
         st.success(f"{filename} Is Ready to Download!")
         st.info(
@@ -445,20 +485,15 @@ with tab1:
         st.header("Contributing to SigmaHQ")
         st.markdown(
             """
-            Congratulations! You've just generated a Sigma rule and you're only a few steps away from a great contribution. Please follow our [contribution guide](https://github.com/SigmaHQ/sigma/blob/master/CONTRIBUTING.md) to get started.
-            """
+                Congratulations! You've just generated a Sigma rule and you're only a few steps away from a great contribution. Please follow our [contribution guide](https://github.com/SigmaHQ/sigma/blob/master/CONTRIBUTING.md) to get started.
+                """
         )
 
-    st.link_button(
-        "⏳ Convert Using SigConverter",
-        url="https://sigconverter.io",
-    )
-
-    if st.button("✔️ Validate Sigma Rule"):
+    if validate_bool:
         errors_num = 0
 
         # Title Test
-        sigma_content = st.session_state["content_data"]
+        sigma_content = st.session_state["content_data_new"]
         try:
             title = sigma_content["title"]
             title_errors = test_title(title)
@@ -474,13 +509,13 @@ with tab1:
                 error_msg += "- " + err + "\n"
             st.warning(
                 f"""
-                The rule has a non-conform 'title' field. Please check: https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide#title\n\n
-                {error_msg}
-                """
+                    The rule has a non-conform 'title' field. Please check: https://github.com/SigmaHQ/sigma/wiki/Rule-Creation-Guide#title\n\n
+                    {error_msg}
+                    """
             )
 
         # False Positive Test
-        sigma_content = st.session_state["content_data"]
+        sigma_content = st.session_state["content_data_new"]
         try:
             falsepositives = sigma_content["falsepositives"]
             falsepositives_errors = test_falsepositives(falsepositives)
@@ -494,9 +529,9 @@ with tab1:
                 error_msg += "- " + err + "\n"
             st.warning(
                 f"""
-                The rule has a non-conform false positives section:\n\n
-                {error_msg}
-                """
+                    The rule has a non-conform false positives section:\n\n
+                    {error_msg}
+                    """
             )
 
         # Logsource Test
@@ -512,6 +547,24 @@ with tab1:
             st.success("The tests have successfully passed")
 
 with tab2:
+    st.header("Getting Started")
+    st.markdown(
+        """
+        If this is your first time writing a sigma rule. We highly recommend you check the following resources
+
+        - 📚 [Writing You First Sigma Rule](https://sigmahq.io/docs/basics/rules.html)
+        - 🧬 [What Are Value Modifiers?](https://sigmahq.io/docs/basics/modifiers.html)
+        - 🔎 [Sigma Logsource](https://sigmahq.io/docs/basics/log-sources.html)
+        - 🏷️ [Sigma Tags](https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md)
+
+        Make sure to follow the SigmaHQ conventions regarding the different fields for the best experience possible during the review process
+
+        - [SigmaHQ Conventions](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_conventions.md)    
+        - [SigmaHQ Rule Title Convention](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_title_rule.md)
+        """
+    )
+
+with tab3:
     with open("streamlit/taxonomy.md", "r") as f:
         content = f.read()
     st.markdown(content, unsafe_allow_html=True)

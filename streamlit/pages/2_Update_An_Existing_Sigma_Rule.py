@@ -2,15 +2,14 @@
 # Version: 10-23
 
 from datetime import datetime
-import streamlit as st
-import uuid
-import yaml
-import glob
-import os
-import ntpath
-import json
 from PIL import Image
+import glob
+import json
+import ntpath
 import openai
+import pyperclip
+import streamlit as st
+import yaml
 
 
 def sigma_title_desc(openai_api_key, sigma_rule_logic):
@@ -178,9 +177,10 @@ if "ai_settings" not in st.session_state:
         "file": "",
     }
 
-if "content_data" not in st.session_state:
-    st.session_state["content_data"] = {
+if "content_data_update" not in st.session_state:
+    st.session_state["content_data_update"] = {
         "title": "Enter the title of the rule",
+        "id": "Generate a valid UUIDv4",
         "status": "Select the status of the rule",
         "description": "Enter a description for the rule",
         "references": ["Enter references"],
@@ -200,7 +200,7 @@ if "content_data" not in st.session_state:
 
 st.title("🧰 SigmaHQ Rule Update")
 
-tab1, tab2 = st.tabs(["Rule View", "Logsource Taxonomy"])
+tab1, tab2, tab3 = st.tabs(["Rule View", "Getting Started", "Logsource Taxonomy"])
 
 with tab1:
     with st.sidebar:
@@ -218,9 +218,9 @@ with tab1:
                         "The API Key seems to be invalid, please provide another one"
                     )
                 else:
-                    if st.session_state["content_data"]["detection"]:
+                    if st.session_state["content_data_update"]["detection"]:
                         detection_logic = json.dumps(
-                            st.session_state["content_data"]["detection"]
+                            st.session_state["content_data_update"]["detection"]
                         )
                         if len(detection_logic) < 100:
                             st.error(
@@ -235,11 +235,11 @@ with tab1:
                                 )
 
                                 # Fill Data
-                                st.session_state["content_data"]["title"] = ai_data[
+                                st.session_state["content_data_update"][
                                     "title"
-                                ]
+                                ] = ai_data["title"]
 
-                                st.session_state["content_data"][
+                                st.session_state["content_data_update"][
                                     "description"
                                 ] = ai_data["description"]
 
@@ -275,67 +275,70 @@ with tab1:
                 st.session_state["ai_settings"]["file"] = selected_file
                 with open(selected_file, "r") as file:
                     file_content = yaml.safe_load(file)
-                    st.session_state["content_data"] = file_content
+                    st.session_state["content_data_update"] = file_content
 
         # Title
-        st.session_state["content_data"]["title"] = st.text_input(
-            "Title", st.session_state["content_data"]["title"]
+        st.session_state["content_data_update"]["title"] = st.text_input(
+            "Title", st.session_state["content_data_update"]["title"]
         )
 
         # Status
         statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
-        st.session_state["content_data"]["status"] = st.selectbox(
+        st.session_state["content_data_update"]["status"] = st.selectbox(
             "Status",
             statuses,
-            index=statuses.index(st.session_state["content_data"]["status"])
-            if st.session_state["content_data"]["status"] in statuses
+            index=statuses.index(st.session_state["content_data_update"]["status"])
+            if st.session_state["content_data_update"]["status"] in statuses
             else 0,
         )
 
         # Description
-        st.session_state["content_data"]["description"] = st.text_area(
-            "Description", st.session_state["content_data"]["description"]
+        st.session_state["content_data_update"]["description"] = st.text_area(
+            "Description", st.session_state["content_data_update"]["description"]
         )
 
         # References
         try:
             refs = st.text_area(
                 "References (newline-separated)",
-                "\n".join(st.session_state["content_data"]["references"]),
+                "\n".join(st.session_state["content_data_update"]["references"]),
             )
-            st.session_state["content_data"]["references"] = refs.split("\n")
+            st.session_state["content_data_update"]["references"] = refs.split("\n")
         except:
             pass
 
         # Author
-        st.session_state["content_data"]["author"] = st.text_input(
-            "Author", st.session_state["content_data"]["author"]
+        st.session_state["content_data_update"]["author"] = st.text_input(
+            "Author", st.session_state["content_data_update"]["author"]
         )
 
         # Modified
-        st.session_state["content_data"]["modified"] = (
+        st.session_state["content_data_update"]["modified"] = (
             st.date_input("Modified", datetime.today())
         ).strftime("%Y/%m/%d")
 
         # Tags
         tags = st.text_area(
             "Tags (comma-separated)",
-            ", ".join(st.session_state["content_data"]["tags"]),
+            ", ".join(st.session_state["content_data_update"]["tags"]),
         )
-        st.session_state["content_data"]["tags"] = tags.split(", ")
+        st.session_state["content_data_update"]["tags"] = tags.split(", ")
 
         # Logsource
 
         # Product
         try:
             products = logsource_content["product"]
-            st.session_state["content_data"]["logsource"]["product"] = st.selectbox(
+            st.session_state["content_data_update"]["logsource"][
+                "product"
+            ] = st.selectbox(
                 "product",
                 products,
                 index=products.index(
-                    st.session_state["content_data"]["logsource"]["product"]
+                    st.session_state["content_data_update"]["logsource"]["product"]
                 )
-                if st.session_state["content_data"]["logsource"]["product"] in products
+                if st.session_state["content_data_update"]["logsource"]["product"]
+                in products
                 else 0,
             )
         except:
@@ -343,13 +346,16 @@ with tab1:
         # Service
         try:
             services = logsource_content["product"]
-            st.session_state["content_data"]["logsource"]["service"] = st.selectbox(
+            st.session_state["content_data_update"]["logsource"][
+                "service"
+            ] = st.selectbox(
                 "service",
                 services,
                 index=services.index(
-                    st.session_state["content_data"]["logsource"]["service"]
+                    st.session_state["content_data_update"]["logsource"]["service"]
                 )
-                if st.session_state["content_data"]["logsource"]["service"] in services
+                if st.session_state["content_data_update"]["logsource"]["service"]
+                in services
                 else 0,
             )
         except:
@@ -357,58 +363,62 @@ with tab1:
         # Category
         try:
             categories = logsource_content["category"]
-            st.session_state["content_data"]["logsource"]["category"] = st.selectbox(
+            st.session_state["content_data_update"]["logsource"][
+                "category"
+            ] = st.selectbox(
                 "category",
                 categories,
                 index=categories.index(
-                    st.session_state["content_data"]["logsource"]["category"]
+                    st.session_state["content_data_update"]["logsource"]["category"]
                 )
-                if st.session_state["content_data"]["logsource"]["category"]
+                if st.session_state["content_data_update"]["logsource"]["category"]
                 in categories
                 else 0,
             )
         except:
             pass
 
-        # Detection
-        detection_str = yaml.safe_dump(
-            st.session_state["content_data"]["detection"],
-            default_flow_style=False,
-            sort_keys=False,
-        )
-
-        st.session_state["content_data"]["detection"] = st.text_area(
-            "Detection",
-            detection_str,
-            help="Enter the detection condition. Example:\nselection_domain:\n    Contents|contains:\n        - '.githubusercontent.com'\n    selection_extension:\n        TargetFilename|contains:\n            - '.exe:Zone'\n    condition: all of selection*",
-        )
-        st.session_state["content_data"]["detection"] = yaml.safe_load(
-            st.session_state["content_data"]["detection"]
-        )
-
         # Falsepositives
         try:
             refs = st.text_area(
                 "Falsepositives (newline-separated)",
-                "\n".join(st.session_state["content_data"]["falsepositives"]),
+                "\n".join(st.session_state["content_data_update"]["falsepositives"]),
             )
-            st.session_state["content_data"]["falsepositives"] = refs.split("\n")
+            st.session_state["content_data_update"]["falsepositives"] = refs.split("\n")
         except:
             pass
 
         # Level
         levels = ["informational", "low", "medium", "high", "critical"]
-        st.session_state["content_data"]["level"] = st.selectbox(
+        st.session_state["content_data_update"]["level"] = st.selectbox(
             "Level",
             levels,
-            index=levels.index(st.session_state["content_data"]["level"])
-            if st.session_state["content_data"]["level"] in levels
+            index=levels.index(st.session_state["content_data_update"]["level"])
+            if st.session_state["content_data_update"]["level"] in levels
             else 0,
         )
 
     st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
 
-    session_state_tmp = clean_empty(st.session_state["content_data"])
+    # Detection
+    detection_str = yaml.safe_dump(
+        st.session_state["content_data_update"]["detection"],
+        default_flow_style=False,
+        sort_keys=False,
+        indent=4,
+    )
+
+    st.session_state["content_data_update"]["detection"] = st.text_area(
+        "Detection",
+        detection_str,
+        help="Enter the detection condition. Example:\nselection_domain:\n    Contents|contains:\n        - '.githubusercontent.com'\n    selection_extension:\n        TargetFilename|contains:\n            - '.exe:Zone'\n    condition: all of selection*",
+        height=300,
+    )
+    st.session_state["content_data_update"]["detection"] = yaml.safe_load(
+        st.session_state["content_data_update"]["detection"]
+    )
+
+    session_state_tmp = clean_empty(st.session_state["content_data_update"])
 
     # Just to make sure we don't dump unsafe code and at the same time enforce the indentation
     yaml_output_tmp = yaml.safe_dump(
@@ -428,9 +438,44 @@ with tab1:
         width=1000,
     )
 
-    st.code(yaml_output)
+    st.code(yaml_output, language="yaml")
 
-    if st.button("⚙️ Generate YAML File"):
+    st.markdown(
+        """
+            <style>
+                div[data-testid="column"] {
+                    width: fit-content !important;
+                    flex: unset;
+                }
+                div[data-testid="column"] * {
+                    width: fit-content !important;
+                }
+            </style>
+            """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+
+    generate_bool = False
+    validate_bool = False
+
+    with col1:
+        if st.button("⚙️ Generate YAML File"):
+            generate_bool = True
+
+    with col2:
+        if st.button("✔️ Validate Sigma Rule"):
+            validate_bool = True
+
+    with col3:
+        pyperclip.copy(yaml_output)
+        st.link_button(
+            "⏳ Convert Using SigConverter",
+            url="https://sigconverter.io",
+        )
+
+    if generate_bool:
         filename = ntpath.basename(selected_file)
         st.success(f"{filename} Ready to download!")
         download_button_str = st.download_button(
@@ -447,16 +492,11 @@ with tab1:
             """
         )
 
-    st.link_button(
-        "⏳ Convert Using SigConverter",
-        url="https://sigconverter.io",
-    )
-
-    if st.button("✔️ Validate Sigma Rule"):
+    if validate_bool:
         errors_num = 0
 
         # Title Test
-        sigma_content = st.session_state["content_data"]
+        sigma_content = st.session_state["content_data_update"]
         try:
             title = sigma_content["title"]
             title_errors = test_title(title)
@@ -478,7 +518,7 @@ with tab1:
             )
 
         # False Positive Test
-        sigma_content = st.session_state["content_data"]
+        sigma_content = st.session_state["content_data_update"]
         try:
             falsepositives = sigma_content["falsepositives"]
             falsepositives_errors = test_falsepositives(falsepositives)
@@ -510,6 +550,24 @@ with tab1:
             st.success("The tests have successfully passed")
 
 with tab2:
+    st.header("Getting Started")
+    st.markdown(
+        """
+        If this is your first time writing a sigma rule. We highly recommend you check the following resources
+
+        - 📚 [Writing You First Sigma Rule](https://sigmahq.io/docs/basics/rules.html)
+        - 🧬 [What Are Value Modifiers?](https://sigmahq.io/docs/basics/modifiers.html)
+        - 🔎 [Sigma Logsource](https://sigmahq.io/docs/basics/log-sources.html)
+        - 🏷️ [Sigma Tags](https://github.com/SigmaHQ/sigma-specification/blob/main/Tags_specification.md)
+
+        Make sure to follow the SigmaHQ conventions regarding the different fields for the best experience possible during the review process
+
+        - [SigmaHQ Conventions](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_conventions.md)    
+        - [SigmaHQ Rule Title Convention](https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_title_rule.md)
+        """
+    )
+
+with tab3:
     with open("streamlit/taxonomy.md", "r") as f:
         content = f.read()
     st.markdown(content, unsafe_allow_html=True)
