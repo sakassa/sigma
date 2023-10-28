@@ -1,3 +1,6 @@
+# Author(s): Michael Haag (@M_haggis) & Nasreddine Bencherchali (@nas_bench)
+# Version: 10-23
+
 from datetime import datetime
 import streamlit as st
 import uuid
@@ -11,6 +14,7 @@ import openai
 
 
 def sigma_title_desc(openai_api_key, sigma_rule_logic):
+    # Author: Harrison Van Riper (@pseudohvr)
     openai.api_key = openai_api_key
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-16k",

@@ -1,3 +1,6 @@
+# Author(s): Michael Haag (@M_haggis) & Nasreddine Bencherchali (@nas_bench)
+# Version: 10-23
+
 import streamlit as st
 import os
 from PIL import Image
@@ -64,7 +67,7 @@ with col2:
         - Deepen your Sigma knowledge by jumping into our [documentation](https://sigmahq.io/docs/guide/getting-started.html)
         - Get insights about Sigma from the core maintainers by following our [blog](https://blog.sigmahq.io/)
         - Having issues? Sumbit a [new issue
-          ](https://github.com/SigmaHQ/issues)
+          ](https://github.com/SigmaHQ/sigma/issues/new/choose)
         """
     )
 with col3:
