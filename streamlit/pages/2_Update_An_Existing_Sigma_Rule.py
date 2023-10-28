@@ -201,203 +201,193 @@ st.title("🧰 SigmaHQ Rule Update")
 
 tab1, tab2, tab3 = st.tabs(["Rule View", "Getting Started", "Logsource Taxonomy"])
 
-with tab1:
-    with st.sidebar:
-        st.title("AI Settings")
-        st.session_state["ai_settings"]["api"] = st.text_input(
-            "OpenAI API Key",
-            st.session_state["ai_settings"]["api"],
-            help="You can leverage AI to help generate automatic titles and descriptions. All you need is an OpenAI API key generated from https://platform.openai.com/account/api-keys",
-        )
+with st.sidebar:
+    st.title("AI Settings")
+    st.session_state["ai_settings"]["api"] = st.text_input(
+        "OpenAI API Key",
+        st.session_state["ai_settings"]["api"],
+        help="You can leverage AI to help generate automatic titles and descriptions. All you need is an OpenAI API key generated from https://platform.openai.com/account/api-keys",
+    )
 
-        if st.button("Auto Generate Title and Description"):
-            if st.session_state["ai_settings"]["api"]:
-                if len(st.session_state["ai_settings"]["api"]) != 51:
-                    st.error(
-                        "The API Key seems to be invalid, please provide another one"
-                    )
-                else:
-                    if st.session_state["content_data_update"]["detection"]:
-                        detection_logic = json.dumps(
-                            st.session_state["content_data_update"]["detection"]
-                        )
-                        if len(detection_logic) < 100:
-                            st.error(
-                                "The detection field must contains valid Sigma content"
-                            )
-                        else:
-                            try:
-                                # Generate Data
-                                ai_data = sigma_title_desc(
-                                    st.session_state["ai_settings"]["api"],
-                                    detection_logic,
-                                )
-
-                                # Fill Data
-                                st.session_state["content_data_update"][
-                                    "title"
-                                ] = ai_data["title"]
-
-                                st.session_state["content_data_update"][
-                                    "description"
-                                ] = ai_data["description"]
-
-                                st.success(
-                                    "Successfully generated the Title and Description"
-                                )
-                            except openai.error.RateLimitError:
-                                st.error(
-                                    "You exceeded your current quota, please check your plan and billing details."
-                                )
-                            except:
-                                st.error("Unknown Error")
-
-                    else:
-                        st.error("The detection field must not be empty")
+    if st.button("Auto Generate Title and Description"):
+        if st.session_state["ai_settings"]["api"]:
+            if len(st.session_state["ai_settings"]["api"]) != 51:
+                st.error("The API Key seems to be invalid, please provide another one")
             else:
-                st.error(
-                    "An OpenAI API Key is required to use the Auto Generate feature"
-                )
+                if st.session_state["content_data_update"]["detection"]:
+                    detection_logic = json.dumps(
+                        st.session_state["content_data_update"]["detection"]
+                    )
+                    if len(detection_logic) < 100:
+                        st.error(
+                            "The detection field must contains valid Sigma content"
+                        )
+                    else:
+                        try:
+                            # Generate Data
+                            ai_data = sigma_title_desc(
+                                st.session_state["ai_settings"]["api"],
+                                detection_logic,
+                            )
 
-        st.title("Content Settings")
+                            # Fill Data
+                            st.session_state["content_data_update"]["title"] = ai_data[
+                                "title"
+                            ]
 
-        # Create a dropdown menu with the file list
-        selected_file = st.selectbox(
-            "Select a YAML file",
-            file_list,
-            help="You can type in the rule file name for a quick search",
+                            st.session_state["content_data_update"][
+                                "description"
+                            ] = ai_data["description"]
+
+                            st.success(
+                                "Successfully generated the Title and Description"
+                            )
+                        except openai.error.RateLimitError:
+                            st.error(
+                                "You exceeded your current quota, please check your plan and billing details."
+                            )
+                        except:
+                            st.error("Unknown Error")
+
+                else:
+                    st.error("The detection field must not be empty")
+        else:
+            st.error("An OpenAI API Key is required to use the Auto Generate feature")
+
+    st.title("Content Settings")
+
+    # Create a dropdown menu with the file list
+    selected_file = st.selectbox(
+        "Select a YAML file",
+        file_list,
+        help="You can type in the rule file name for a quick search",
+    )
+
+    # When a file is selected, read the file and update the session state
+    if selected_file:
+        if selected_file != st.session_state["ai_settings"]["file"]:
+            st.session_state["ai_settings"]["file"] = selected_file
+            with open(selected_file, "r") as file:
+                file_content = yaml.safe_load(file)
+                st.session_state["content_data_update"] = file_content
+
+    # Title
+    st.session_state["content_data_update"]["title"] = st.text_input(
+        "Title", st.session_state["content_data_update"]["title"]
+    )
+
+    # Status
+    statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
+    st.session_state["content_data_update"]["status"] = st.selectbox(
+        "Status",
+        statuses,
+        index=statuses.index(st.session_state["content_data_update"]["status"])
+        if st.session_state["content_data_update"]["status"] in statuses
+        else 0,
+    )
+
+    # Description
+    st.session_state["content_data_update"]["description"] = st.text_area(
+        "Description", st.session_state["content_data_update"]["description"]
+    )
+
+    # References
+    try:
+        refs = st.text_area(
+            "References (newline-separated)",
+            "\n".join(st.session_state["content_data_update"]["references"]),
         )
+        st.session_state["content_data_update"]["references"] = refs.split("\n")
+    except:
+        pass
 
-        # When a file is selected, read the file and update the session state
-        if selected_file:
-            if selected_file != st.session_state["ai_settings"]["file"]:
-                st.session_state["ai_settings"]["file"] = selected_file
-                with open(selected_file, "r") as file:
-                    file_content = yaml.safe_load(file)
-                    st.session_state["content_data_update"] = file_content
+    # Author
+    st.session_state["content_data_update"]["author"] = st.text_input(
+        "Author", st.session_state["content_data_update"]["author"]
+    )
 
-        # Title
-        st.session_state["content_data_update"]["title"] = st.text_input(
-            "Title", st.session_state["content_data_update"]["title"]
-        )
+    # Modified
+    st.session_state["content_data_update"]["modified"] = (
+        st.date_input("Modified", datetime.today())
+    ).strftime("%Y/%m/%d")
 
-        # Status
-        statuses = ["stable", "test", "experimental", "deprecated", "unsupported"]
-        st.session_state["content_data_update"]["status"] = st.selectbox(
-            "Status",
-            statuses,
-            index=statuses.index(st.session_state["content_data_update"]["status"])
-            if st.session_state["content_data_update"]["status"] in statuses
+    # Tags
+    tags = st.text_area(
+        "Tags (comma-separated)",
+        ", ".join(st.session_state["content_data_update"]["tags"]),
+    )
+    st.session_state["content_data_update"]["tags"] = tags.split(", ")
+
+    # Logsource
+
+    # Product
+    try:
+        products = logsource_content["product"]
+        st.session_state["content_data_update"]["logsource"]["product"] = st.selectbox(
+            "product",
+            products,
+            index=products.index(
+                st.session_state["content_data_update"]["logsource"]["product"]
+            )
+            if st.session_state["content_data_update"]["logsource"]["product"]
+            in products
             else 0,
         )
-
-        # Description
-        st.session_state["content_data_update"]["description"] = st.text_area(
-            "Description", st.session_state["content_data_update"]["description"]
-        )
-
-        # References
-        try:
-            refs = st.text_area(
-                "References (newline-separated)",
-                "\n".join(st.session_state["content_data_update"]["references"]),
+    except:
+        pass
+    # Service
+    try:
+        services = logsource_content["product"]
+        st.session_state["content_data_update"]["logsource"]["service"] = st.selectbox(
+            "service",
+            services,
+            index=services.index(
+                st.session_state["content_data_update"]["logsource"]["service"]
             )
-            st.session_state["content_data_update"]["references"] = refs.split("\n")
-        except:
-            pass
-
-        # Author
-        st.session_state["content_data_update"]["author"] = st.text_input(
-            "Author", st.session_state["content_data_update"]["author"]
-        )
-
-        # Modified
-        st.session_state["content_data_update"]["modified"] = (
-            st.date_input("Modified", datetime.today())
-        ).strftime("%Y/%m/%d")
-
-        # Tags
-        tags = st.text_area(
-            "Tags (comma-separated)",
-            ", ".join(st.session_state["content_data_update"]["tags"]),
-        )
-        st.session_state["content_data_update"]["tags"] = tags.split(", ")
-
-        # Logsource
-
-        # Product
-        try:
-            products = logsource_content["product"]
-            st.session_state["content_data_update"]["logsource"][
-                "product"
-            ] = st.selectbox(
-                "product",
-                products,
-                index=products.index(
-                    st.session_state["content_data_update"]["logsource"]["product"]
-                )
-                if st.session_state["content_data_update"]["logsource"]["product"]
-                in products
-                else 0,
-            )
-        except:
-            pass
-        # Service
-        try:
-            services = logsource_content["product"]
-            st.session_state["content_data_update"]["logsource"][
-                "service"
-            ] = st.selectbox(
-                "service",
-                services,
-                index=services.index(
-                    st.session_state["content_data_update"]["logsource"]["service"]
-                )
-                if st.session_state["content_data_update"]["logsource"]["service"]
-                in services
-                else 0,
-            )
-        except:
-            pass
-        # Category
-        try:
-            categories = logsource_content["category"]
-            st.session_state["content_data_update"]["logsource"][
-                "category"
-            ] = st.selectbox(
-                "category",
-                categories,
-                index=categories.index(
-                    st.session_state["content_data_update"]["logsource"]["category"]
-                )
-                if st.session_state["content_data_update"]["logsource"]["category"]
-                in categories
-                else 0,
-            )
-        except:
-            pass
-
-        # Falsepositives
-        try:
-            refs = st.text_area(
-                "Falsepositives (newline-separated)",
-                "\n".join(st.session_state["content_data_update"]["falsepositives"]),
-            )
-            st.session_state["content_data_update"]["falsepositives"] = refs.split("\n")
-        except:
-            pass
-
-        # Level
-        levels = ["informational", "low", "medium", "high", "critical"]
-        st.session_state["content_data_update"]["level"] = st.selectbox(
-            "Level",
-            levels,
-            index=levels.index(st.session_state["content_data_update"]["level"])
-            if st.session_state["content_data_update"]["level"] in levels
+            if st.session_state["content_data_update"]["logsource"]["service"]
+            in services
             else 0,
         )
+    except:
+        pass
+    # Category
+    try:
+        categories = logsource_content["category"]
+        st.session_state["content_data_update"]["logsource"]["category"] = st.selectbox(
+            "category",
+            categories,
+            index=categories.index(
+                st.session_state["content_data_update"]["logsource"]["category"]
+            )
+            if st.session_state["content_data_update"]["logsource"]["category"]
+            in categories
+            else 0,
+        )
+    except:
+        pass
 
-    st.write("<h2>Sigma YAML Output</h2>", unsafe_allow_html=True)
+    # Falsepositives
+    try:
+        refs = st.text_area(
+            "Falsepositives (newline-separated)",
+            "\n".join(st.session_state["content_data_update"]["falsepositives"]),
+        )
+        st.session_state["content_data_update"]["falsepositives"] = refs.split("\n")
+    except:
+        pass
+
+    # Level
+    levels = ["informational", "low", "medium", "high", "critical"]
+    st.session_state["content_data_update"]["level"] = st.selectbox(
+        "Level",
+        levels,
+        index=levels.index(st.session_state["content_data_update"]["level"])
+        if st.session_state["content_data_update"]["level"] in levels
+        else 0,
+    )
+
+with tab1:
+    st.markdown("### Detection", unsafe_allow_html=True)
 
     # Detection
     detection_str = yaml.safe_dump(
@@ -408,13 +398,18 @@ with tab1:
     )
 
     st.session_state["content_data_update"]["detection"] = st.text_area(
-        "Detection",
+        "",
         detection_str,
-        help="Enter the detection condition. Example:\nselection_domain:\n    Contents|contains:\n        - '.githubusercontent.com'\n    selection_extension:\n        TargetFilename|contains:\n            - '.exe:Zone'\n    condition: all of selection*",
+        help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
         height=300,
     )
     st.session_state["content_data_update"]["detection"] = yaml.safe_load(
         st.session_state["content_data_update"]["detection"]
+    )
+
+    st.markdown(
+        "### Sigma YAML Output",
+        unsafe_allow_html=True,
     )
 
     session_state_tmp = clean_empty(st.session_state["content_data_update"])
@@ -545,7 +540,7 @@ with tab1:
             )
 
         if errors_num == 0:
-            st.success("The tests have successfully passed")
+            st.success("All tests have successfully passed")
 
 with tab2:
     st.header("Getting Started")

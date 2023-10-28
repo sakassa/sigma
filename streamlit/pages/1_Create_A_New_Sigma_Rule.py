@@ -388,19 +388,22 @@ with st.sidebar:
 
 
 with tab1:
-    st.write("<h3>Detection</h3>", unsafe_allow_html=True)
+    st.markdown("### Detection", unsafe_allow_html=True)
 
     # Detection
     detection_str = yaml.safe_dump(
         st.session_state["content_data_new"]["detection"],
         default_flow_style=False,
         sort_keys=False,
+        indent=4,
     )
+
     st.session_state["content_data_new"]["detection"] = st.text_area(
         "",
         detection_str,
         help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
     )
+
     st.session_state["content_data_new"]["detection"] = yaml.safe_load(
         st.session_state["content_data_new"]["detection"]
     )
@@ -542,7 +545,7 @@ with tab1:
             )
 
         if errors_num == 0:
-            st.success("The tests have successfully passed")
+            st.success("All tests have successfully passed")
 
 with tab2:
     st.header("Getting Started")
