@@ -7,7 +7,6 @@ import glob
 import json
 import ntpath
 import openai
-import pyperclip
 import streamlit as st
 import yaml
 
@@ -469,7 +468,6 @@ with tab1:
             validate_bool = True
 
     with col3:
-        pyperclip.copy(yaml_output)
         st.link_button(
             "⏳ Convert Using SigConverter",
             url="https://sigconverter.io",

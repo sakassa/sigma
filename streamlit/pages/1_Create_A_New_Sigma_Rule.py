@@ -5,7 +5,6 @@ from datetime import datetime
 from PIL import Image
 import json
 import openai
-import pyperclip
 import streamlit as st
 import uuid
 import uuid
@@ -463,7 +462,6 @@ with tab1:
             validate_bool = True
 
     with col3:
-        pyperclip.copy(yaml_output)
         st.link_button(
             "⏳ Convert Using SigConverter",
             url="https://sigconverter.io",
