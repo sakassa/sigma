@@ -188,7 +188,10 @@ if (
             "service": "Enter the service name",
             "category": "Enter the category name",
         },
-        "detection": {"condition": "Enter the detection condition"},
+        "detection": {
+            "selection": {"Image|endswith": "\whoami.exe"},
+            "condition": "selection",
+        },
         "falsepositives": ["Enter any known false positives"],
         "level": "Select the severity level",
     }
@@ -415,7 +418,6 @@ with tab1:
         theme="tomorrow_night",
         keybinding="vscode",
         wrap=False,
-        show_gutter=False,
         font_size=15,
         tab_size=4,
     )

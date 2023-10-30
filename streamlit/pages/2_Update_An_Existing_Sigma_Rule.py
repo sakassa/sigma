@@ -465,7 +465,6 @@ with tab1:
         theme="tomorrow_night",
         keybinding="vscode",
         wrap=False,
-        show_gutter=False,
         font_size=15,
         tab_size=4,
     )
