@@ -261,6 +261,10 @@ with st.sidebar:
                             st.error(
                                 "You exceeded your current quota, please check your plan and billing details."
                             )
+                        except openai.error.AuthenticationError:
+                            st.error(
+                                "Incorrect API key provided. You can find your API key at https://platform.openai.com/account/api-keys."
+                            )
                         except:
                             st.error("Unknown Error")
 
