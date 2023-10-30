@@ -373,10 +373,10 @@ with st.sidebar:
 
     # Tags
     tags = st.text_area(
-        "Tags (comma-separated)",
-        ", ".join(st.session_state["content_data_update"]["tags"]),
+        "Tags (newline-separated)",
+        "\n".join(st.session_state["content_data_update"]["tags"]),
     )
-    st.session_state["content_data_update"]["tags"] = tags.split(", ")
+    st.session_state["content_data_update"]["tags"] = tags.split("\n")
 
     # Logsource
 
@@ -478,9 +478,14 @@ with tab1:
 
     st.session_state["content_data_update"]["detection"] = detection_content
 
-    st.session_state["content_data_update"]["detection"] = yaml.safe_load(
-        st.session_state["content_data_update"]["detection"]
-    )
+    try:
+        st.session_state["content_data_update"]["detection"] = yaml.safe_load(
+            st.session_state["content_data_update"]["detection"]
+        )
+    except:
+        st.error(
+            "The detection section contains an error. Please make sure the syntax is correct"
+        )
 
     st.markdown(
         "### Sigma YAML Output",
