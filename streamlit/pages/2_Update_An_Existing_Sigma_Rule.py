@@ -304,8 +304,7 @@ with st.sidebar:
                 st.session_state["settings"]["file"] = uuids_filename_mapping[
                     selected_uuid
                 ]
-                # Fix this later future me
-                with open("../" + uuids_filename_mapping[selected_uuid], "r") as file:
+                with open(uuids_filename_mapping[selected_uuid], "r") as file:
                     file_content = yaml.safe_load(file)
                     st.session_state["content_data_update"] = file_content
     elif search_method == "Search By Filename":
