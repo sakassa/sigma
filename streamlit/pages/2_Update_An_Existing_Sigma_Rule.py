@@ -549,6 +549,11 @@ with tab1:
         )
 
     if generate_bool:
+        if st.session_state["settings"]["search_method"] == "Search By UUID":
+            selected_file = uuids_filename_mapping[st.session_state["settings"]["id"]]
+        elif st.session_state["settings"]["search_method"] == "Search By Filename":
+            selected_file = st.session_state["settings"]["file"]
+
         filename = ntpath.basename(selected_file)
         st.success(f"{filename} Ready to download!")
         download_button_str = st.download_button(
