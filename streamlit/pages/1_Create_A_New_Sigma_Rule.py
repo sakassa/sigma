@@ -9,6 +9,7 @@ import streamlit as st
 import uuid
 import uuid
 import yaml
+from streamlit_ace import st_ace, KEYBINDINGS, LANGUAGES, THEMES
 
 
 def sigma_title_desc(openai_api_key, sigma_rule_logic):
@@ -162,7 +163,11 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 if "ai_settings" not in st.session_state:
-    st.session_state["ai_settings"] = {"api": "", "file": ""}
+    st.session_state["ai_settings"] = {
+        "api": "",
+        "id": "",
+        "file": "",
+    }
 
 if (
     "content_data_new" not in st.session_state
@@ -246,7 +251,7 @@ with st.sidebar:
         else:
             st.error("An OpenAI API Key is required to use the Auto Generate feature")
 
-    st.title("Content Settings")
+    st.title("Rule Metadata")
 
     # Title
     st.session_state["content_data_new"]["title"] = st.text_input(
@@ -398,11 +403,26 @@ with tab1:
         indent=4,
     )
 
-    st.session_state["content_data_new"]["detection"] = st.text_area(
-        "",
-        detection_str,
-        help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
+    # tomorrow_night
+    # dracula
+    detection_content = st_ace(
+        value=detection_str,
+        language="yaml",
+        theme="tomorrow_night",
+        keybinding="vscode",
+        wrap=False,
+        show_gutter=False,
+        font_size=15,
+        tab_size=4,
     )
+
+    # st.session_state["content_data_new"]["detection"] = st.text_area(
+    #    "",
+    #    detection_str,
+    #    help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
+    # )
+
+    st.session_state["content_data_new"]["detection"] = detection_content
 
     st.session_state["content_data_new"]["detection"] = yaml.safe_load(
         st.session_state["content_data_new"]["detection"]

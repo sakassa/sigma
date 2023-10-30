@@ -9,6 +9,7 @@ import ntpath
 import openai
 import streamlit as st
 import yaml
+from streamlit_ace import st_ace, KEYBINDINGS, LANGUAGES, THEMES
 
 
 def sigma_title_desc(openai_api_key, sigma_rule_logic):
@@ -130,6 +131,15 @@ def clean_empty(d):
     return d
 
 
+def search_method_change(widget_key, state_key):
+    if state_key == "Search By Filename":
+        st.session_state["settings"]["search_method"] = "Search By UUID"
+        st.session_state.rule_id = st.session_state["settings"]["id"]
+    elif state_key == "Search By UUID":
+        st.session_state["settings"]["search_method"] = "Search By Filename"
+        st.session_state.rule_file = st.session_state["settings"]["file"]
+
+
 class MyDumper(yaml.Dumper):
     def increase_indent(self, flow=False, indentless=False):
         return super(MyDumper, self).increase_indent(flow, False)
@@ -152,15 +162,18 @@ custom_css = """
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
-file_list = (
-    glob.glob("rules/**/*.yml", recursive=True)
-    + glob.glob("rules/**/*.yaml", recursive=True)
-    + glob.glob("rules-*/**/*.yml", recursive=True)
-    + glob.glob("rules-*/**/*.yaml", recursive=True)
+file_list = glob.glob("rules/**/*.yml", recursive=True) + glob.glob(
+    "rules-*/**/*.yml", recursive=True
 )
 
 with open("streamlit/logsource_data.json", "r") as file:
     logsource_content = json.loads(file.read())
+
+with open("streamlit/rules_uuid.txt", "r") as file:
+    uuids = file.read().strip().split("\n")
+
+with open("streamlit/uuids_filename_mappings.json", "r") as file:
+    uuids_filename_mapping = json.loads(file.read())
 
 hide_streamlit_style = """
             <style>
@@ -170,10 +183,12 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-if "ai_settings" not in st.session_state:
-    st.session_state["ai_settings"] = {
+if "settings" not in st.session_state:
+    st.session_state["settings"] = {
         "api": "",
+        "id": "",
         "file": "",
+        "search_method": "Search By UUID",
     }
 
 if "content_data_update" not in st.session_state:
@@ -203,15 +218,15 @@ tab1, tab2, tab3 = st.tabs(["Rule View", "Getting Started", "Logsource Taxonomy"
 
 with st.sidebar:
     st.title("AI Settings")
-    st.session_state["ai_settings"]["api"] = st.text_input(
+    st.session_state["settings"]["api"] = st.text_input(
         "OpenAI API Key",
-        st.session_state["ai_settings"]["api"],
+        st.session_state["settings"]["api"],
         help="You can leverage AI to help generate automatic titles and descriptions. All you need is an OpenAI API key generated from https://platform.openai.com/account/api-keys",
     )
 
     if st.button("Auto Generate Title and Description"):
-        if st.session_state["ai_settings"]["api"]:
-            if len(st.session_state["ai_settings"]["api"]) != 51:
+        if st.session_state["settings"]["api"]:
+            if len(st.session_state["settings"]["api"]) != 51:
                 st.error("The API Key seems to be invalid, please provide another one")
             else:
                 if st.session_state["content_data_update"]["detection"]:
@@ -226,7 +241,7 @@ with st.sidebar:
                         try:
                             # Generate Data
                             ai_data = sigma_title_desc(
-                                st.session_state["ai_settings"]["api"],
+                                st.session_state["settings"]["api"],
                                 detection_logic,
                             )
 
@@ -256,20 +271,61 @@ with st.sidebar:
 
     st.title("Content Settings")
 
-    # Create a dropdown menu with the file list
-    selected_file = st.selectbox(
-        "Select a YAML file",
-        file_list,
-        help="You can type in the rule file name for a quick search",
+    search_method = st.radio(
+        "Select Search Option",
+        options=["Search By UUID", "Search By Filename"],
+        index=["Search By UUID", "Search By Filename"].index(
+            st.session_state["settings"]["search_method"]
+        ),
+        key="search_method",
+        on_change=search_method_change,
+        args=("", st.session_state["settings"]["search_method"]),
     )
 
-    # When a file is selected, read the file and update the session state
-    if selected_file:
-        if selected_file != st.session_state["ai_settings"]["file"]:
-            st.session_state["ai_settings"]["file"] = selected_file
-            with open(selected_file, "r") as file:
-                file_content = yaml.safe_load(file)
-                st.session_state["content_data_update"] = file_content
+    if search_method == "Search By UUID":
+        # Search by UUID
+
+        st.session_state["settings"]["search_method"] = "Search By UUID"
+        selected_uuid = st.selectbox(
+            "Select Rule By UUID",
+            uuids,
+            help="You can type in the rule uuid a quick search",
+            placeholder="Select Rule By UUID",
+            key="rule_id",
+        )
+
+        if selected_uuid:
+            if selected_uuid != st.session_state["settings"]["id"]:
+                st.session_state["settings"]["id"] = selected_uuid
+                st.session_state["settings"]["file"] = uuids_filename_mapping[
+                    selected_uuid
+                ]
+                with open(uuids_filename_mapping[selected_uuid], "r") as file:
+                    file_content = yaml.safe_load(file)
+                    st.session_state["content_data_update"] = file_content
+    elif search_method == "Search By Filename":
+        # Search By Filename
+        st.session_state["settings"]["search_method"] = "Search By Filename"
+        selected_file = st.selectbox(
+            "Select Rule By Filename",
+            file_list,
+            help="You can type in the rule file name for a quick search",
+            placeholder="Select Rule By Filename",
+            key="rule_file",
+        )
+
+        # When a file is selected, read the file and update the session state
+        if selected_file:
+            if selected_file != st.session_state["settings"]["file"]:
+                st.session_state["settings"]["file"] = selected_file
+                st.session_state["settings"]["id"] = uuids_filename_mapping[
+                    selected_file
+                ]
+                with open(selected_file, "r") as file:
+                    file_content = yaml.safe_load(file)
+                    st.session_state["content_data_update"] = file_content
+
+    st.title("Rule Metadata")
 
     # Title
     st.session_state["content_data_update"]["title"] = st.text_input(
@@ -397,12 +453,28 @@ with tab1:
         indent=4,
     )
 
-    st.session_state["content_data_update"]["detection"] = st.text_area(
-        "",
-        detection_str,
-        help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
-        height=300,
+    # tomorrow_night
+    # dracula
+    detection_content = st_ace(
+        value=detection_str,
+        language="yaml",
+        theme="tomorrow_night",
+        keybinding="vscode",
+        wrap=False,
+        show_gutter=False,
+        font_size=15,
+        tab_size=4,
     )
+
+    # st.session_state["content_data_update"]["detection"] = st.text_area(
+    #    "",
+    #    detection_str,
+    #    help="[Learn More](https://sigmahq.io/docs/basics/rules.html#detection)",
+    #    height=300,
+    # )
+
+    st.session_state["content_data_update"]["detection"] = detection_content
+
     st.session_state["content_data_update"]["detection"] = yaml.safe_load(
         st.session_state["content_data_update"]["detection"]
     )
