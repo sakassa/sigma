@@ -5,6 +5,19 @@ import streamlit as st
 import os
 from PIL import Image
 
+footer = """<style>
+.footer {
+position: fixed;
+left: 0;
+bottom: 0;
+width: 100%;
+text-align: center;
+}
+</style>
+<div class="footer">
+<p>Developed with ❤ by <a style='display: block; text-align: center;' href="https://twitter.com/nas_bench/">Nasreddine Bencherchali</a><a style='display: block; text-align: center;' href="https://twitter.com/m_haggis/">Michael Haag</a></p>
+</div
+"""
 
 st.set_page_config(
     page_title="SigmaHQ Rule Creation",
@@ -79,3 +92,6 @@ col4, col5, col6 = st.columns([0.2, 0.6, 0.2])
 with col5:
     image = Image.open("streamlit/sigma_logo_dark.png")
     st.image(image, width=300)
+
+
+st.markdown(footer, unsafe_allow_html=True)
