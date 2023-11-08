@@ -9,6 +9,8 @@ import ntpath
 import openai
 import streamlit as st
 import yaml
+import base64
+from urllib.parse import quote_plus
 from streamlit_ace import st_ace, KEYBINDINGS, LANGUAGES, THEMES
 
 
@@ -543,9 +545,11 @@ with tab1:
             validate_bool = True
 
     with col3:
+        # base64 and url encode the yaml output
+        encoded_yaml_output = quote_plus(base64.b64encode(yaml_output.encode('utf-8')).decode('utf-8'))
         st.link_button(
             "⏳ Convert Using SigConverter",
-            url="https://sigconverter.io",
+            url="https://sigconverter.io/#rule=" + encoded_yaml_output,
         )
 
     if generate_bool:
