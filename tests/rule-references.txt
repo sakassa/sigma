@@ -3462,3 +3462,8 @@ https://docs.microsoft.com/en-us/azure/role-based-access-control/resource-provid
 https://community.f5.com/t5/technical-forum/running-bash-commands-via-rest-api/td-p/272516
 https://www.sysaid.com/blog/service-desk/on-premise-software-security-vulnerability-notification
 https://github.com/AliBrTab/CVE-2023-46747-POC/tree/main
+https://www.pwc.com/gx/en/issues/cybersecurity/cyber-threat-intelligence/yellow-liderc-ships-its-scripts-delivers-imaploader-malware.html
+https://www.fortinet.com/blog/threat-research/konni-campaign-distributed-via-malicious-document
+http://www.solomonson.com/posts/2010-07-09-reading-eventviewer-command-line/
+https://www.ired.team/offensive-security/persistence/t1128-netsh-helper-dll
+https://www.virustotal.com/gui/file/d72af640b71b8e3eca3eba660dd7c7f029ff8852bcacaa379e7b6c57cf4d9b44
